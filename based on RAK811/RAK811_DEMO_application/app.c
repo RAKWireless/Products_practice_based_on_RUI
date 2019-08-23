@@ -9,7 +9,7 @@ static uint8_t JoinCnt=0;
 bool IsTxDone = false;   //Entry sleep flag
 RUI_DEVICE_STATUS_T app_device_status; //record device status 
 uint8_t a[50]={};    // Data buffer to be sent  
-uint8_t process_cli = 0;  //AT command flag bit
+static uint8_t process_cli = 0;  //AT command flag bit
 LoRaMacPrimitives_t LoRaMacPrimitives;
 LoRaMacCallback_t LoRaMacCallbacks;
 MibRequestConfirm_t mibReq;
@@ -152,6 +152,7 @@ void BoardInitPeriph( void )
 
     region_init();  //Init LoRa Mac
 
+    TimerIdleInit(50);  //Listening to the UART frame  ,this timer is Special for frames listening   
 }
 
 /*******************************************************************************************
@@ -161,6 +162,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     // UartPrint("%s\r\n",cli_buffer);
     process_cli = 1;
+
 }
 
 /*******************************************************************************************
@@ -234,11 +236,9 @@ int Parse_string_loop(void)
           rui_lora_send(8,cli_buffer,pdata_index); 
        }
     }
-
-    process_cli=0;
+    process_cli=0;    
     pdata_index = 0;
-    memset(cli_buffer,0,CLI_LENGTH_MAX);
-     
+    memset(cli_buffer,0,CLI_LENGTH_MAX);     
 }
 
 
@@ -313,6 +313,7 @@ int main( void )
 			break;
 		default: break;
 	} 
+
     //application instance
     while(1)
     {
@@ -320,10 +321,10 @@ int main( void )
         switch(app_device_status.work_mode)
         {
             case LORAWAN:
-                if(process_cli)Parse_string_loop();  //Parse serial port strings
+                if(process_cli == 1)Parse_string_loop();  //Parse serial port strings
                 break;
             case P2P:
-                if(process_cli)Parse_string_loop();  //Parse serial port strings
+                if(process_cli == 1)Parse_string_loop();  //Parse serial port strings
                 break;
             case TEST:
                 break;
