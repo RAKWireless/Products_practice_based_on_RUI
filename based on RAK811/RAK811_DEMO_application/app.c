@@ -150,9 +150,7 @@ void BoardInitPeriph( void )
 
  	rw_ReadUsrConfig();        //get LoRa parameter configure in flash    
 
-    region_init();  //Init LoRa Mac
-
-    TimerIdleInit(50);  //Listening to the UART frame  ,this timer is Special for frames listening   
+    region_init();  //Init LoRa Mac  
 }
 
 /*******************************************************************************************
@@ -160,7 +158,7 @@ void BoardInitPeriph( void )
  * *****************************************************************************************/  
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-    // UartPrint("%s\r\n",cli_buffer);
+    // UartPrint("HAL_TIM_PeriodElapsedCallback%s\r\n",cli_buffer);
     process_cli = 1;
 
 }
@@ -287,7 +285,7 @@ int main( void )
                     case RUI_CLASS_C:UartPrint("Current work_mode:LoRaWAN, join_mode:OTAA, Class: C\r\n");
                         break;
                     default:break;
-                }
+                }                
                 rui_lora_join();
             }else if(app_device_status.join_mode == RUI_ABP)
             {
@@ -321,7 +319,10 @@ int main( void )
         switch(app_device_status.work_mode)
         {
             case LORAWAN:
-                if(process_cli == 1)Parse_string_loop();  //Parse serial port strings
+                if(process_cli == 1)
+                {
+                    Parse_string_loop();  //Parse serial port strings 
+                }
                 break;
             case P2P:
                 if(process_cli == 1)Parse_string_loop();  //Parse serial port strings
