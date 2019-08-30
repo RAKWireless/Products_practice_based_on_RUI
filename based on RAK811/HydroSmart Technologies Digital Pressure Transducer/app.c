@@ -295,7 +295,7 @@ int main( void )
 	} 
 
     rui_timer_init(&autosend_timer, autosend_event);
-    rui_timer_setvalue(&autosend_timer,5000); //auto send interval set:30s
+    rui_timer_setvalue(&autosend_timer,30000); //auto send interval set:30s
 
     //application instance
     while(1)
