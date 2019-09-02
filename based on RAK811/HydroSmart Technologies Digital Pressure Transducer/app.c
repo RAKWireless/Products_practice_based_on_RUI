@@ -91,7 +91,8 @@ void LoRaWANJoined_callback(uint32_t status)
         else   //Join failed
         {
             UartPrint("[LoRa]:Joined Failed! \r\n"); 
-            JoinCnt=0;         
+            JoinCnt=0;
+            IsTxDone=true;          
         }          
     }    
 }
@@ -124,7 +125,8 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T status)
             break;
     }  
 
-    rui_timer_start(&autosend_timer);  //start autosend_timer after send success 
+    rui_timer_start(&autosend_timer);  //start autosend_timer after send success
+    IsTxDone=true; 
 }
 
 /*******************************************************************************************
@@ -325,8 +327,7 @@ int main( void )
 
                     getPhy.Type = MIB_NETWORK_JOINED;
                     if(LoRaMacMibGetRequestConfirm(&getPhy) == LORAMAC_STATUS_OK)  //check LoRaWAN net status
-                    {  
-                        rui_timer_start(&autosend_timer);  
+                    {                        
                         if(rui_lora_send(8,a,i) !=0)
                         {
                             UartPrint("[LoRa]: send Error\r\n");                            
@@ -334,6 +335,11 @@ int main( void )
                         }else UartPrint("[LoRa]: Send out\r\n");
                         i = 0;
                     }
+                }
+                if(IsTxDone)
+                {
+                    IsTxDone=false;    
+                    rui_device_sleep(1);               
                 }
                 break;
             case P2P:
