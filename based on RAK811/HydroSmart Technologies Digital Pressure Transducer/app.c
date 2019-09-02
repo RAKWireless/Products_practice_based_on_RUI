@@ -10,10 +10,7 @@ bool IsTxDone = false;   //Entry sleep flag
 RUI_DEVICE_STATUS_T app_device_status; //record device status 
 uint8_t a[50]={};    // Data buffer to be sent  
 static uint8_t process_cli = 0;  //AT command flag bit
-LoRaMacPrimitives_t LoRaMacPrimitives;
-LoRaMacCallback_t LoRaMacCallbacks;
-MibRequestConfirm_t mibReq;
-MlmeReq_t mlmeReq;
+MlmeReq_t mlmeReq;  //query LoRaMAC parameter
 #define CLI_LENGTH_MAX  256
 char cli_buffer[CLI_LENGTH_MAX]; //Parse serial port strings buffer
 uint16_t pdata_index=0;          //UART string point
@@ -23,6 +20,10 @@ volatile uint8_t autosend_flag = 0;    //auto send flag
 
 /*******************************************************************************************
  * LoRaMac callback functions
+ * * void LoRaReceive_callback(RUI_RECEIVE_T* Receive_datapackage);//LoRaWAN callback if receive data 
+ * * void LoRaP2PReceive_callback(RUI_LORAP2P_RECEIVE_T *Receive_P2Pdatapackage);//LoRaP2P callback if receive data 
+ * * void LoRaWANJoined_callback(uint32_t status);//LoRaWAN callback after join server request
+ * * void LoRaWANSendsucceed_callback(RUI_MCPS_T status);//LoRaWAN call back after send data complete
  * *****************************************************************************************/  
 void LoRaReceive_callback(RUI_RECEIVE_T* Receive_datapackage)
 {
@@ -37,7 +38,7 @@ void LoRaReceive_callback(RUI_RECEIVE_T* Receive_datapackage)
     }
     UartPrint("\r\n");
 }
-LoRaP2PReceive_callback(RUI_LORAP2P_RECEIVE_T *Receive_P2Pdatapackage)
+void LoRaP2PReceive_callback(RUI_LORAP2P_RECEIVE_T *Receive_P2Pdatapackage)
 {
     char hex_str[3]={0};
     UartPrint("at+recv=%d,%d,%d:", Receive_P2Pdatapackage -> Rssi, Receive_P2Pdatapackage -> Snr, Receive_P2Pdatapackage -> BufferSize); 
