@@ -19,7 +19,6 @@ const uint8_t level[2]={0,1};
 
 RUI_I2C_ST I2c_1;
 volatile static bool autosend_flag = false;    //auto send flag
-static uint8_t a[80]={};    // Data buffer to be sent by lora
 
 
 
@@ -45,37 +44,12 @@ void bsp_init(void)
 
 void app_loop(void)
 {
-    static uint8_t i=0;
-    double P_PSI,Temperature;
     rui_lora_get_status(&app_lora_status);
     if(app_lora_status.IsJoined)  //if LoRaWAN is joined
     {
-        if(autosend_flag)
-        {
-            autosend_flag = false;
-            Get_Pressure(&P_PSI,&Temperature);
-
-            a[i++]=0x02;
-            a[i++]=0x67;
-            a[i++]=((uint16_t)(Temperature*10)>>8) & 0xff;
-            a[i++]=((uint16_t)(Temperature*10)) & 0xff;
-            a[i++]=0x03;
-            a[i++]=0x02;
-            a[i++]=((uint16_t)(P_PSI*100)>>8) & 0xff;
-            a[i++]=((uint16_t)(P_PSI*100)) & 0xff;
-
-            if(rui_lora_send(8,a,i) !=0)
-            {
-                RUI_LOG_PRINTF("[LoRa]: send Error\r\n");                            
-                if(app_device_status.autosend_status)
-                {
-                    rui_lora_get_status(&app_lora_status);  //The query gets the current lora status 
-                    rui_lora_set_send_interval(1,app_lora_status.lorasend_interval);  //start autosend_timer after send success
-
-                }
-            }else RUI_LOG_PRINTF("[LoRa]: Send out\r\n");
-            i = 0;
-        }
+       /*****************************************************************************
+             * user app loop code
+        *****************************************************************************/
     }	
 }
 

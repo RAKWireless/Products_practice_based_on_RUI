@@ -22,3 +22,22 @@ uint32_t BoardBatteryMeasureVolage( float *voltage )
     DUartPrint("vdiv= %d ,vref= %d ,Vcal=%d\r\n",vdiv, vref,vcal);
 
 }
+
+int BME680_get_data(uint32_t *humidity,int16_t* temp,uint32_t* pressure)
+{
+		#include "BME680.h"
+		uint32_t  resis;
+		if(SUCCESS == BME680_read(temp, pressure, humidity, &resis))
+		{		
+			RUI_LOG_PRINTF("Humidity:%d.%d %%RH\r\n",(uint32_t)(*humidity/1000),(uint32_t)(*humidity%1000));		
+			RUI_LOG_PRINTF("Temperature:%d.%d degree\r\n",(uint32_t)(*temp/100),(uint32_t)(*temp%100));	
+			RUI_LOG_PRINTF("Pressure:%d.%d hPa\r\n",(uint32_t)(*pressure/100),(uint32_t)(*pressure%100));					
+		}	
+		else
+        {
+            RUI_LOG_PRINTF("BME680 Error.\r\n");
+            return -1;
+        } 
+				
+	return 0;
+}

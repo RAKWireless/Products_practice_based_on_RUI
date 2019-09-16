@@ -40,16 +40,20 @@ void OnLed_Green_TimerEvent(void)
 {
     TimerStop(&Led_Green_Timer);
     rui_gpio_rw(RUI_IF_WRITE,&Led_Green, high);
-    autosend_flag = true;  //set autosend_flag after join LoRaWAN succeeded 
+
+    rui_device_get_status(&app_device_status);//The query gets the current device status 
+    if(app_device_status.autosend_status)autosend_flag = true;  //set autosend_flag after join LoRaWAN succeeded 
 }
 
 void OnLed_Blue_TimerEvent(void)
 {
     TimerStop(&Led_Blue_Timer);
     rui_gpio_rw(RUI_IF_WRITE,&Led_Blue, high);
+
+    rui_device_get_status(&app_device_status);//The query gets the current device status 
     if(app_device_status.autosend_status)
     {
-        IsTxDone=true;
+        IsTxDone=true;  //Sleep flag set true
     }
 }
 void bsp_led_init(void)
@@ -104,7 +108,9 @@ void bsp_init(void)
 void app_loop(void)
 {
     float temp_f=0;
-    double temp_d=0;
+    uint32_t humidity;
+    int16_t temperature;
+    uint32_t pressure;
     int temp=0; 
     int x,y,z;
     float x0,y0,z0;
@@ -124,21 +130,22 @@ void app_loop(void)
             a[i++]=(temp&0xffff) >> 8;
             a[i++]=temp&0xff;				
 
-            rui_humidity_get(&temp_d);
-            a[i++]=0x07;
-            a[i++]=0x68;
-            a[i++]=( (int32_t)temp_d / 500 ) & 0xFF;
-
-            rui_pressure_get(&temp_d);					
-            a[i++]=0x06;
-            a[i++]=0x73;
-            a[i++]=((int32_t)( temp_d / 10 ) >> 8 ) & 0xFF;
-
-            rui_temperature_get(&temp_d);				
-            a[i++]=0x02;
-            a[i++]=0x67;
-            a[i++]=((uint16_t)( temp_d / 10 ) >> 8 ) & 0xFF;
-            a[i++]=(uint16_t)(temp_d / 10 ) & 0xFF;
+            if(BME680_get_data(&humidity,&temperature,&pressure)==0)
+            {
+                a[i++]=0x07;
+                a[i++]=0x68;
+                a[i++]=( humidity / 500 ) & 0xFF;
+					
+                a[i++]=0x06;
+                a[i++]=0x73;
+                a[i++]=(( pressure / 10 ) >> 8 ) & 0xFF;
+                a[i++]=(pressure / 10 ) & 0xFF;
+			
+                a[i++]=0x02;
+                a[i++]=0x67;
+                a[i++]=(( temperature / 10 ) >> 8 ) & 0xFF;
+                a[i++]=(temperature / 10 ) & 0xFF;
+            }
 
 	        if(i != 0)
             {                    
@@ -163,7 +170,7 @@ void app_loop(void)
                     autosend_flag=false; 
                     rui_lora_get_status(&app_lora_status);  //The query gets the current lora status 
                     rui_lora_set_send_interval(1,app_lora_status.lorasend_interval);  //start autosend_timer after send success
-                    IsTxDone = true;
+                    IsTxDone=true;  //Sleep flag set true
                 }                        
             }                					
         }
@@ -228,7 +235,7 @@ void LoRaWANJoined_callback(uint32_t status)
         {
             RUI_LOG_PRINTF("[LoRa]:Joined Failed! \r\n"); 
             JoinCnt=0;
-            IsTxDone=true;          
+            IsTxDone=true;  //Sleep flag set true       
         }          
     }    
 }
@@ -288,7 +295,6 @@ void rui_uart_recv(RUI_UART_DEF uart_def, uint8_t *pdata, uint16_t len)
  * *****************************************************************************************/ 
 void main(void)
 {
-    float temp_f=0;
     static bool autosendtemp_status;
 
     rui_init();
@@ -393,6 +399,11 @@ void main(void)
 
                 app_loop();    
 
+                break;
+            case RUI_P2P:
+                /*************************************************************************************
+                 * user code at LoRa P2P mode
+                *************************************************************************************/
                 break;
             default :break;
         }
