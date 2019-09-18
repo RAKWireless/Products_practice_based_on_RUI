@@ -38,7 +38,7 @@ void rui_lora_autosend_callback(void)  //auto_send timeout event callback
 
 void OnLed_Green_TimerEvent(void)
 {
-    TimerStop(&Led_Green_Timer);
+    rui_timer_stop(&Led_Green_Timer);
     rui_gpio_rw(RUI_IF_WRITE,&Led_Green, high);
 
     rui_device_get_status(&app_device_status);//The query gets the current device status 
@@ -47,7 +47,7 @@ void OnLed_Green_TimerEvent(void)
 
 void OnLed_Blue_TimerEvent(void)
 {
-    TimerStop(&Led_Blue_Timer);
+    rui_timer_stop(&Led_Blue_Timer);
     rui_gpio_rw(RUI_IF_WRITE,&Led_Blue, high);
 
     rui_device_get_status(&app_device_status);//The query gets the current device status 
@@ -69,13 +69,13 @@ void bsp_led_init(void)
     rui_gpio_init(&Led_Blue);
     rui_gpio_rw(RUI_IF_WRITE,&Led_Green,low);
     rui_gpio_rw(RUI_IF_WRITE,&Led_Blue,low);
-    DelayMs(200);
+    rui_delay_ms(200);
     rui_gpio_rw(RUI_IF_WRITE,&Led_Green,high);
     rui_gpio_rw(RUI_IF_WRITE,&Led_Blue,high);
-    TimerInit(&Led_Green_Timer,OnLed_Green_TimerEvent);
-    TimerInit(&Led_Blue_Timer,OnLed_Blue_TimerEvent);
-    TimerSetValue(&Led_Green_Timer,100);
-    TimerSetValue(&Led_Blue_Timer,100);
+    rui_timer_init(&Led_Green_Timer,OnLed_Green_TimerEvent);
+    rui_timer_init(&Led_Blue_Timer,OnLed_Blue_TimerEvent);
+    rui_timer_setvalue(&Led_Green_Timer,100);
+    rui_timer_setvalue(&Led_Blue_Timer,100);
 }
 void bsp_adc_init(void)
 {
