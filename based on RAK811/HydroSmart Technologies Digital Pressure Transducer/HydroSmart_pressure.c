@@ -25,7 +25,7 @@ void Get_Pressure(double* P_PSI,double* Temperature)
 	
 	ADC_p = 3.3 * fadc/8388608.0 ;
 	*P_PSI =  (200 * (ADC_p-0.5)/2.0)+0 ;
-	UartPrint("\r\nPressure: %d.%d PSI\r\n",(uint32_t)*P_PSI,(uint32_t)(*P_PSI*100-((int32_t)*P_PSI) * 100));
+	RUI_LOG_PRINTF("\r\nPressure: %d.%d PSI\r\n",(uint32_t)*P_PSI,(uint32_t)(*P_PSI*100-((int32_t)*P_PSI) * 100));
 	
 	rui_i2c_rw(&rui_i2c,RUI_IF_READ,0xDA,0x09,dat_temp,3);
 	dat=0;
@@ -35,5 +35,5 @@ void Get_Pressure(double* P_PSI,double* Temperature)
 	else
 	fadc = dat;
 	*Temperature= 25.0 + fadc/65536.0;
-	UartPrint("\r\nTemperature: %d.%d degree\r\n",(uint32_t)*Temperature,(uint32_t)(*Temperature*100-((int32_t)*Temperature) * 100));
+	RUI_LOG_PRINTF("\r\nTemperature: %d.%d degree\r\n",(uint32_t)*Temperature,(uint32_t)(*Temperature*100-((int32_t)*Temperature) * 100));
 }
