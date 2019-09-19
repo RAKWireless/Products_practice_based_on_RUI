@@ -17,7 +17,6 @@ const uint8_t level[2]={0,1};
 #define low     &level[0]
 #define high    &level[1]
 
-RUI_I2C_ST I2c_1;
 volatile static bool autosend_flag = false;    //auto send flag
 static uint8_t a[80]={};    // Data buffer to be sent by lora
 
@@ -26,21 +25,13 @@ static uint8_t a[80]={};    // Data buffer to be sent by lora
 void rui_lora_autosend_callback(void)  //auto_send timeout event callback
 {
     autosend_flag = true;
+    Pressure_init();
 }
 
-void bsp_i2c_init(void)
-{
-    I2c_1.INSTANCE_ID = 1;
-    I2c_1.PIN_SDA = I2C_SDA;
-    I2c_1.PIN_SCL = I2C_SCL;
-    I2c_1.FREQUENCY = RUI_I2C_FREQ_400K;
 
-    rui_i2c_init(&I2c_1);
-
-}
 void bsp_init(void)
 {
-    bsp_i2c_init();
+    Pressure_init();
 }
 
 void app_loop(void)
@@ -225,6 +216,7 @@ void main(void)
  * *****************************************************************************************/    
     rui_device_get_status(&app_device_status);
     rui_lora_get_status(&app_lora_status);
+    autosendtemp_status = app_device_status.autosend_status;
 	
 	if(app_device_status.autosend_status)RUI_LOG_PRINTF("autosend_interval: %us\r\n", app_lora_status.lorasend_interval);
 /*******************************************************************************************    
