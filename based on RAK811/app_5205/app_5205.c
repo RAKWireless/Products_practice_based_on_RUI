@@ -38,7 +38,9 @@ extern uint8_t NmeaStringSize;
 
 void rui_lora_autosend_callback(void)  //auto_send timeout event callback
 {
-    autosend_flag = true;
+    autosend_flag = true;      
+    bsp_i2c_init();
+    rui_delay_ms(50);
 }
 
 void OnLed_Green_TimerEvent(void)
@@ -100,7 +102,7 @@ void bsp_i2c_init(void)
     I2c_1.INSTANCE_ID = 1;
     I2c_1.PIN_SDA = I2C_SDA;
     I2c_1.PIN_SCL = I2C_SCL;
-    I2c_1.FREQUENCY = RUI_I2C_FREQ_400K;
+    I2c_1.FREQUENCY = RUI_I2C_FREQ_100K;
 
     rui_i2c_init(&I2c_1);
 
@@ -118,6 +120,7 @@ void bsp_init(void)
 void app_loop(void)
 {
     float temp_f=0.0;
+    float x_f,y_f,z_f;
     int temp=0;
     uint32_t humidity;
     int16_t temperature;
@@ -126,7 +129,6 @@ void app_loop(void)
     double latitude;
     double longitude;
     int16_t altitude;
-    AxesRaw_t Lis3dh_rawdata;
 
     static uint8_t i=0;
     rui_lora_get_status(&app_lora_status);
@@ -177,9 +179,9 @@ void app_loop(void)
                 a[i++]=(temperature / 10 ) & 0xFF;
             }
 
-            if(LIS3DH_GetAccAxesRaw(&Lis3dh_rawdata) == 1)
+            if(lis3dh_get_data(&x_f,&y_f,&z_f) == 0)
             {
-                x=(int)(Lis3dh_rawdata.AXIS_X);y=(int)(Lis3dh_rawdata.AXIS_Y);z=(int)(Lis3dh_rawdata.AXIS_Z);
+                x=(int)(x_f);y=(int)(y_f);z=(int)(z_f);
                 a[i++]=0x03;
                 a[i++]=0x71;
                 a[i++]=(x>>8) & 0xff;
@@ -277,8 +279,7 @@ void LoRaWANJoined_callback(uint32_t status)
         else   //Join failed
         {
             RUI_LOG_PRINTF("[LoRa]:Joined Failed! \r\n"); 
-            JoinCnt=0;
-            IsTxDone=true;  //Sleep flag set true       
+            JoinCnt=0;    
         }          
     }    
 }
@@ -324,7 +325,7 @@ void rui_uart_recv(RUI_UART_DEF uart_def, uint8_t *pdata, uint16_t len)
 {
     switch(uart_def)
     {
-        case RUI_UART1:
+        case RUI_UART1:            
             rui_lora_send(8,pdata,len);  //process code if RUI_UART1 work at RUI_UART_UNVARNISHED
             break;
         case RUI_UART3:
@@ -373,8 +374,9 @@ void main(void)
     rui_device_get_status(&app_device_status);
     rui_lora_get_status(&app_lora_status);
     autosendtemp_status = app_device_status.autosend_status;
-	
+
 	RUI_LOG_PRINTF("autosend_interval: %us\r\n", app_lora_status.lorasend_interval);
+
 /*******************************************************************************************    
  *Init OK ,print board status and auto join LoRaWAN
  * 
@@ -449,10 +451,10 @@ void main(void)
                 }
 
                 if(IsTxDone)
-                {
-                    IsTxDone=false;  
+                {                      
                     GpsStop();  //close gps before entry sleep mode
-                    rui_device_sleep(1);               
+                    rui_device_sleep(1); 
+                    IsTxDone=false;             
                 }  
 
                 app_loop();    

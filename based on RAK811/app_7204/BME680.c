@@ -49,6 +49,7 @@
  @brief Sensor driver for BME680 sensor */
 #include "BME680.h"
 #include "board.h"
+#include "rui.h"
 /*!
  * @brief This internal API is used to read the calibrated data from the sensor.
  *
@@ -301,7 +302,7 @@ int8_t bme680_init(struct bme680_dev *dev)
 					/* Get the Calibration data */
 					rslt = get_calib_data(dev);
 					if( rslt != BME680_OK ){
-              UartPrint("BME get calibration ERROR\r\n");
+              			RUI_LOG_PRINTF("BME get calibration ERROR\r\n");
 					}
 				} else {
 					rslt = BME680_E_DEV_NOT_FOUND;
@@ -309,7 +310,7 @@ int8_t bme680_init(struct bme680_dev *dev)
 			}
 		}
 		else{
-      		UartPrint("BME soft reset ERROR\r\n");
+      		RUI_LOG_PRINTF("BME soft reset ERROR\r\n");
 		}
 	}
 
@@ -400,7 +401,7 @@ int8_t bme680_soft_reset(struct bme680_dev *dev)
 		if (rslt == BME680_OK) {
 			rslt = bme680_set_regs(&reg_addr, &soft_rst_cmd, 1, dev);
 			if( rslt != BME680_OK ){
-                UartPrint("BME set regs ERROR\r\n");
+                RUI_LOG_PRINTF("BME set regs ERROR\r\n");
 			}
 			/* Wait for 5ms */
 			dev->delay_ms(BME680_RESET_PERIOD);

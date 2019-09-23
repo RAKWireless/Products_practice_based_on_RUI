@@ -81,11 +81,11 @@ int8_t BME680_configuation( void ){
     
     rslt = bme680_init(&gas_sensor);
     if( rslt != BME680_OK ){
-        UartPrint("BME680 Init ERROR\r\n");
+        UartPrint("BME680 init error.\r\n");
         return rslt;
     }
     
-    UartPrint("BME680 init success!\r\n");
+    UartPrint("BME680 init success.\r\n");
 
     BME680_read(&t, &p, &h, &r);
     
@@ -124,6 +124,7 @@ int8_t BME680_read( int16_t * temprature, uint32_t * pressure, uint32_t * humidi
     rslt = bme680_set_sensor_settings(set_required_settings,&gas_sensor);
     if( rslt != BME680_OK ){
         UartPrint("BME680 set sensor settings ERROR\r\n");
+        return rslt;
     }
     
     
@@ -131,6 +132,7 @@ int8_t BME680_read( int16_t * temprature, uint32_t * pressure, uint32_t * humidi
 
     if( rslt != BME680_OK ){
         UartPrint("BME680 set sensor mode ERROR\r\n");
+        return rslt;
     }
     
     bme680_get_profile_dur(&meas_period, &gas_sensor);
@@ -140,6 +142,7 @@ int8_t BME680_read( int16_t * temprature, uint32_t * pressure, uint32_t * humidi
     rslt = bme680_get_sensor_data(&data, &gas_sensor);
     if( rslt != BME680_OK ){
         UartPrint("BME680 get sensor data ERROR\r\n");
+        return rslt;
     }
 
     *temprature = data.temperature;
@@ -159,5 +162,5 @@ int8_t BME680_read( int16_t * temprature, uint32_t * pressure, uint32_t * humidi
     gas_sensor.power_mode = BME680_SLEEP_MODE;
     bme680_set_sensor_mode(&gas_sensor);
     
-    return SUCCESS;
+    return rslt;
 }

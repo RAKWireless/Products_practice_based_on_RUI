@@ -11,7 +11,7 @@ static int8_t bme680_i2c_read(uint8_t dev_id, uint8_t reg_addr, uint8_t *data, u
     res = rui_i2c_rw(&I2c_1,RUI_IF_READ,dev_id,reg_addr,data,len);
 
     if( res != 0  ){
-        UartPrint("BME I2C READ ERROR\r\n");
+        RUI_LOG_PRINTF("BME I2C READ ERROR\r\n");
         return BME680_E_COM_FAIL;
     }
     return BME680_OK;
@@ -23,7 +23,7 @@ static int8_t bme680_i2c_write(uint8_t dev_id, uint8_t reg_addr, uint8_t *data, 
 
     res = rui_i2c_rw(&I2c_1,RUI_IF_WRITE,dev_id,reg_addr,data,len);
     if( res != 0  ){
-        UartPrint("BME I2C WRITE ERROR\r\n");
+        RUI_LOG_PRINTF("BME I2C WRITE ERROR\r\n");
         return BME680_E_COM_FAIL;
     }
     return BME680_OK;
@@ -56,7 +56,7 @@ int8_t BME680_configuation( void ){
     /* Set the desired sensor configuration */
     rslt = bme680_set_sensor_settings(set_required_settings,&gas_sensor);
     if( rslt != BME680_OK ){
-        UartPrint("BME680 set sensor settings ERROR\r\n");
+        RUI_LOG_PRINTF("BME680 set sensor settings ERROR\r\n");
     }
     
     return rslt;
@@ -81,11 +81,11 @@ int8_t BME680_configuation( void ){
     
     rslt = bme680_init(&gas_sensor);
     if( rslt != BME680_OK ){
-        UartPrint("BME680 Init ERROR\r\n");
+        RUI_LOG_PRINTF("BME680 init error.\r\n");
         return rslt;
     }
     
-    UartPrint("BME680 init success!\r\n");
+    RUI_LOG_PRINTF("BME680 init success.\r\n");
 
     BME680_read(&t, &p, &h, &r);
     
@@ -123,14 +123,16 @@ int8_t BME680_read( int16_t * temprature, uint32_t * pressure, uint32_t * humidi
     /* Set the desired sensor configuration */
     rslt = bme680_set_sensor_settings(set_required_settings,&gas_sensor);
     if( rslt != BME680_OK ){
-        UartPrint("BME680 set sensor settings ERROR\r\n");
+        RUI_LOG_PRINTF("BME680 set sensor settings ERROR\r\n");
+        return rslt;
     }
     
     
     rslt = bme680_set_sensor_mode(&gas_sensor);
 
     if( rslt != BME680_OK ){
-        UartPrint("BME680 set sensor mode ERROR\r\n");
+        RUI_LOG_PRINTF("BME680 set sensor mode ERROR\r\n");
+        return rslt;
     }
     
     bme680_get_profile_dur(&meas_period, &gas_sensor);
@@ -139,25 +141,24 @@ int8_t BME680_read( int16_t * temprature, uint32_t * pressure, uint32_t * humidi
 
     rslt = bme680_get_sensor_data(&data, &gas_sensor);
     if( rslt != BME680_OK ){
-        UartPrint("BME680 get sensor data ERROR\r\n");
+        RUI_LOG_PRINTF("BME680 get sensor data ERROR\r\n");
+        return rslt;
     }
 
     *temprature = data.temperature;
     *pressure = data.pressure;
     *humidity = data.humidity;
     
-//    UartPrint("T: %.2f degC, P: %.2f hPa, H %.2f %%rH ", data.temperature / 100.0f,
-//        data.pressure / 100.0f, data.humidity / 1000.0f );
     /* Avoid using measurements from an unstable heating setup */
     if(data.status & BME680_GASM_VALID_MSK){
-//        UartPrint(", G: %d ohms", data.gas_resistance);
+//        RUI_LOG_PRINTF(", G: %d ohms", data.gas_resistance);
         *resistance = data.gas_resistance;
     }
     
-//    UartPrint("\r\n");
+//    RUI_LOG_PRINTF("\r\n");
     
     gas_sensor.power_mode = BME680_SLEEP_MODE;
     bme680_set_sensor_mode(&gas_sensor);
     
-    return SUCCESS;
+    return rslt;
 }
