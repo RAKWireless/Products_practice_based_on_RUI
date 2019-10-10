@@ -40,7 +40,7 @@ void app_task(void * p_context)
     RUI_GPS_DATA g_gps_data = {0};
     uint8_t lat_data[20] = {0}; 
     uint8_t lon_data[20] = {0}; 
-	NRF_LOG_INFO("app_task!!!");
+	RUI_LOG_PRINTF("app_task!!!");
 
 #if defined(LORA_4600_TEST)
     if (RUI_CALLBACK_REGE_FLAG == 0)
@@ -60,54 +60,54 @@ void app_task(void * p_context)
     //get sensor data
 #ifdef BEM280_TEST
     rui_temperature_get(&temp);
-    NRF_LOG_INFO("temperature = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(temp));
+    RUI_LOG_PRINTF("temperature = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(temp));
     rui_humidity_get(&humidity);
-    NRF_LOG_INFO("humidity = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(humidity));
+    RUI_LOG_PRINTF("humidity = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(humidity));
     rui_pressure_get(&pressure);
-    NRF_LOG_INFO("pressure = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(pressure));
+    RUI_LOG_PRINTF("pressure = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(pressure));
 #endif
         
 #ifdef LPS22HB_TEST
     rui_pressure_get(&pressure);
-    NRF_LOG_INFO("pressure = %d hPa\r\n",pressure); 
+    RUI_LOG_PRINTF("pressure = %d hPa\r\n",pressure); 
 #endif
 #ifdef LIS3DH_TEST
     rui_acceleration_get(&x,&y,&z);
-    NRF_LOG_INFO("acceleration x = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(x));
-    NRF_LOG_INFO("acceleration y = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(y));
-    NRF_LOG_INFO("acceleration z = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(z));
+    RUI_LOG_PRINTF("acceleration x = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(x));
+    RUI_LOG_PRINTF("acceleration y = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(y));
+    RUI_LOG_PRINTF("acceleration z = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(z));
         
 #endif
 #ifdef LIS2MDL_TEST
     rui_magnetic_get(&magnetic_x,&magnetic_y,&magnetic_z);
-    NRF_LOG_INFO("magnetic x = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(magnetic_x));
-    NRF_LOG_INFO("magnetic y = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(magnetic_y));
-    NRF_LOG_INFO("magnetic z = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(magnetic_z));
+    RUI_LOG_PRINTF("magnetic x = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(magnetic_x));
+    RUI_LOG_PRINTF("magnetic y = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(magnetic_y));
+    RUI_LOG_PRINTF("magnetic z = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(magnetic_z));
 #endif
 #ifdef OPT3001_TEST
     rui_light_get_strength(&light);
-    NRF_LOG_INFO("light strength = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(light));
+    RUI_LOG_PRINTF("light strength = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(light));
 #endif
         
 #if defined(SHT31_TEST) || defined(SHTC3_TEST)
     rui_temperature_get(&temp);
-    NRF_LOG_INFO("temperature = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(temp));
+    RUI_LOG_PRINTF("temperature = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(temp));
     rui_humidity_get(&humidity);
-    NRF_LOG_INFO("humidity = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(humidity));
+    RUI_LOG_PRINTF("humidity = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(humidity));
 #endif
 
 #if defined(L70R_TEST) ||  defined(BG96_TEST) || defined(MAX7_TEST)
     memset(lat_data,0,20);        
     rui_gps_get(&g_gps_data);
     sprintf(lat_data,"%lf",g_gps_data.Latitude);
-    NRF_LOG_INFO("gps Latitude(0-N,1-S):%d,%s",g_gps_data.LatitudeNS,lat_data);
+    RUI_LOG_PRINTF("gps Latitude(0-N,1-S):%d,%s",g_gps_data.LatitudeNS,lat_data);
     memset(lon_data,0,20);
     sprintf(lon_data,"%lf",g_gps_data.Longitude);
-    NRF_LOG_INFO("gps Longitude(0-E,1-W):%d,%s",g_gps_data.LongitudaEW,lon_data);
+    RUI_LOG_PRINTF("gps Longitude(0-E,1-W):%d,%s",g_gps_data.LongitudaEW,lon_data);
 #endif
 #ifdef  BATTERY_LEVEL_SUPPORT
     rui_device_get_battery_level(&voltage);
-    NRF_LOG_INFO("Battery Voltage = "NRF_LOG_FLOAT_MARKER" V !\r\n", NRF_LOG_FLOAT(voltage));
+    RUI_LOG_PRINTF("Battery Voltage = "NRF_LOG_FLOAT_MARKER" V !\r\n", NRF_LOG_FLOAT(voltage));
 #endif
 
 #if defined(BC95G_TEST) || defined(M35_TEST) || defined(BG96_TEST)
@@ -118,7 +118,7 @@ void app_task(void * p_context)
 if (cellular_status == 1)
 {
     rui_cellular_open_socket(gsm_cmd);
-    NRF_LOG_INFO("gsm_cmd: %s",gsm_cmd);
+    RUI_LOG_PRINTF("gsm_cmd: %s",gsm_cmd);
     rui_cellular_send(gsm_cmd);
     rui_cellular_response(gsm_rsp, 256, 500 * 60);
     memset(gsm_rsp,0,256);
@@ -163,7 +163,7 @@ if (cellular_status == 1)
     //send
     memset(gsm_cmd,0,100);
     sprintf(gsm_cmd,"AT+QISEND=0,%d",strlen(send_data));
-    NRF_LOG_INFO("gsm_cmd: %s",gsm_cmd);
+    RUI_LOG_PRINTF("gsm_cmd: %s",gsm_cmd);
     rui_cellular_send(gsm_cmd);
     delay_ms(2000);
     rui_cellular_send(send_data);
