@@ -1,36 +1,34 @@
 #include "rui.h"
 #include "lis3dh.h"
 #include "opt3001.h"
-#include "shtc3.h"
-#include "lps22hb.h"
+#include "lis2mdl.h"
+#include "bme280.h"
 
-RUI_I2C_ST st = {0};
-
+//because of the I2C pin is different, init the bus is need before handling every sensor on 8212
 void sensor_on(void)
 {
-
-    st.PIN_SDA = 14;
-    st.PIN_SCL = 13;
-    st.FREQUENCY = RUI_I2C_FREQ_400K;
-    rui_i2c_init(&st);
-
     //lis3dh init
+    lis3dh_twi_init();
     lis3dh_init();
-    //opt3001 init
+    //opt3001 init 
+    opt3001_twi_init();
     opt3001_init();
-	//shtc3 init
-    SHTC3_Wakeup();
-    //lps22hb init 0 wake up
-    lps22hb_mode(1);
-
+    //lis2mdl init
+    lis2mdl_twi_init();
+    lis2mdl_init();
+    //bme280 init
+    _bme280_init();
 }
 
 void sensor_off(void)
 {
+    lis3dh_twi_init();
     lis3dh_sleep_init();
+    opt3001_twi_init();
     sensorOpt3001Enable(0);
-    SHTC3_Sleep();
-    lps22hb_mode(0);
+    lis2mdl_twi_init();
+    lis2mdl_sleep_init();
+    _bme280_sleep_init();
 }
 
 void main(void)

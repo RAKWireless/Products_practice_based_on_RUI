@@ -1,8 +1,5 @@
 #include "rui.h"
 #include "lis3dh.h"
-#include "opt3001.h"
-#include "shtc3.h"
-#include "lps22hb.h"
 
 RUI_I2C_ST st = {0};
 
@@ -16,21 +13,14 @@ void sensor_on(void)
 
     //lis3dh init
     lis3dh_init();
-    //opt3001 init
-    opt3001_init();
-	//shtc3 init
-    SHTC3_Wakeup();
-    //lps22hb init 0 wake up
-    lps22hb_mode(1);
+
 
 }
 
 void sensor_off(void)
 {
     lis3dh_sleep_init();
-    sensorOpt3001Enable(0);
-    SHTC3_Sleep();
-    lps22hb_mode(0);
+
 }
 
 void main(void)

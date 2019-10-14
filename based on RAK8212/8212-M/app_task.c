@@ -3,9 +3,6 @@
 #include <string.h>
 #include "rui.h"
 #include "lis3dh.h"
-#include "opt3001.h"
-#include "shtc3.h"
-#include "lps22hb.h"
 
 //the task is the main period task for cellular, user can set on/off and period via at cmd
 //do not modify
@@ -20,17 +17,9 @@ void app_task(void * p_context)
     uint8_t gsm_rsp[256] = {0};
     uint8_t send_data[256] = {0}; 
     uint8_t cellular_status = 1;
-   	double temp = 0;
-    double humidity = 0;
-    double pressure = 0;
     float x = 0;
     float y = 0;
     float z = 0;
-    float magnetic_x = 0;
-    float magnetic_y = 0;
-    float magnetic_z = 0;
-    float light = 0;
-    float voltage = 0;
     RUI_GPS_DATA g_gps_data = {0};
     uint8_t lon_data[20] = {0}; 
     uint8_t lat_data[20] = {0}; 
@@ -45,21 +34,10 @@ void app_task(void * p_context)
     //get sensor data
 
         
-
-        get_lps22hb_data(&pressure);
-        RUI_LOG_PRINTF("pressure = %d hPa\r\n",pressure);
         get_lis3dh_data(&x,&y,&z);
         x =x * 4000/65536;
         y =y * 4000/65536;
         z =z * 4000/65536;   
-        RUI_LOG_PRINTF("acceleration x = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(x));
-        RUI_LOG_PRINTF("acceleration y = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(y));
-        RUI_LOG_PRINTF("acceleration z = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(z));
-        get_opt3001_data(&light);
-        RUI_LOG_PRINTF("light strength = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(light));
-        SHTC3_GetTempAndHumi(&temp,&humidity);
-        RUI_LOG_PRINTF("temperature = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(temp));
-        RUI_LOG_PRINTF("humidity = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(humidity));
 
     memset(lat_data,0,20);        
     rui_gps_get(&g_gps_data);
@@ -69,8 +47,6 @@ void app_task(void * p_context)
     sprintf(lon_data,"%lf",g_gps_data.Longitude);
     RUI_LOG_PRINTF("gps Longitude(0-E,1-W):%d,%s",g_gps_data.LongitudaEW,lon_data);
 
-    rui_device_get_battery_level(&voltage);
-    RUI_LOG_PRINTF("Battery Voltage = "NRF_LOG_FLOAT_MARKER" V !\r\n", NRF_LOG_FLOAT(voltage));
 
 	//open tcp client with remote server
 	memset(gsm_rsp,0,256);
@@ -89,26 +65,7 @@ if (cellular_status == 1)
 
 	sprintf(send_data,"Acc:%.2f,%.2f,%.2f; ",x,y,z);
 
-
-	sprintf(send_data+strlen(send_data),"Tem:%.2f;Hum:%.2f; ",temp,humidity);
-
-
-	sprintf(send_data+strlen(send_data),"Pre:%.2f; ",pressure);
-
-
-
-    sprintf(send_data+strlen(send_data),"Lig:%.2f; ",light);
-
-
-
     sprintf(send_data+strlen(send_data),"Lat(0-N,1-S):%d,%s,Lon(0-E,1-W):%d,%s; ",g_gps_data.LatitudeNS,lat_data,g_gps_data.LongitudaEW,lon_data); 
-
-
-    if(voltage>0)
-    {   
-	   sprintf(send_data+strlen(send_data),"Battery:%.2f; ",voltage);
-    }
-
 
     //send
     memset(gsm_cmd,0,100);
