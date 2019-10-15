@@ -52,7 +52,6 @@ typedef struct {
 
 rui_cfg_t g_rui_cfg_t = {0};
 
-extern RUI_LORA_STATUS_T lora_status;
 int at_flag = 0;
 int power_flag = 0;
 
@@ -485,7 +484,7 @@ void at_parse(char *cmd)
         return;
      }
 
-#if defined(BG96_TEST)
+
      //at+set_config=hologram:
      if(strstr(cmd,"at+set_config=hologram:")!= NULL)
      {
@@ -599,9 +598,8 @@ void at_parse(char *cmd)
          rui_at_response(true, NULL, RAK_OK);
         return;
      }
-#endif
-     
-#if defined(LORA_4600_TEST)
+
+    
      //at+set_config=lora:dev_eui:XXXX
      if(strstr(cmd,"lora:dev_eui")!= NULL)
      {
