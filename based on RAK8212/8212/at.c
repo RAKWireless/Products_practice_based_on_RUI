@@ -394,6 +394,8 @@ void at_parse(char *cmd)
         {
             rui_cellular_send(gsm_cmd);
             rui_delay_ms(1000);
+			memset(gsm_rsp,0,256);
+            rui_cellular_response(gsm_rsp, 256, 500 * 20);
         }
         else
         {
