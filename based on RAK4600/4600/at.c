@@ -55,58 +55,6 @@ extern RUI_LORA_STATUS_T lora_status;
 int at_flag = 0;
 int power_flag = 0;
 
-
-uint8_t hologram_cmd[256] = {0};
-void hologram_cmd_packet(uint8_t *key, uint8_t *data)
-{
-    uint8_t i = 0;
-    uint8_t j = 0;
-    hologram_cmd[0]= '{';
-    hologram_cmd[1]= '\"';
-    hologram_cmd[2]= 'k';
-    hologram_cmd[3]= '\"';
-    hologram_cmd[4]= ':';
-    hologram_cmd[5]= '\"';
-    for (i = 0; i < 8; i++)
-    {
-        hologram_cmd[6+i] = key[j++];
-    }
-    hologram_cmd[14] = '\"';
-    hologram_cmd[15] = ',';
-    hologram_cmd[16]= '\"';
-    hologram_cmd[17]= 'd';
-    hologram_cmd[18]= '\"';
-    hologram_cmd[19]= ':';
-    hologram_cmd[20]= '\"';
-    j = 0;
-    for (i = 0; i < 256; i++)
-    {
-        if (data[j] != 0)
-        {
-            hologram_cmd[21+i] = data[j++];
-        }
-        else
-        {
-            break;
-        }
-    }
-    hologram_cmd[21+j]='\"';
-    hologram_cmd[22+j]=',';
-    hologram_cmd[23+j]='\"';
-    hologram_cmd[24+j]='t';
-    hologram_cmd[25+j]='\"';
-    hologram_cmd[26+j]=':';
-    hologram_cmd[27+j]='\"';
-    hologram_cmd[28+j]='T';
-    hologram_cmd[29+j]='O';
-    hologram_cmd[30+j]='P';
-    hologram_cmd[31+j]='I';
-    hologram_cmd[32+j]='C';
-    hologram_cmd[33+j]='1';
-    hologram_cmd[34+j]='\"';
-    hologram_cmd[35+j]='}';
-}
-
 void StrToHex(char *pbDest, char *pbSrc, int nLen)
 {
     char h1,h2;
