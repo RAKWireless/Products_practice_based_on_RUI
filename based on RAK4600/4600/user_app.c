@@ -4,6 +4,7 @@ void main(void)
 {
     //system init 
     rui_init();
+    
     //you can add your init code here, like timer, uart, spi...
 
     while(1)
