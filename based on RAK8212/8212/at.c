@@ -282,21 +282,21 @@ void at_parse(char *cmd)
         #ifdef USER_UART
         rui_uart_send(RUI_UART1, msg, strlen(msg));
         #endif
-    	delay_ms(1000);
+    	rui_delay_ms(1000);
         
     	sprintf(msg, "Device will Reset after 2s...\r\n");
         RUI_LOG_PRINTF("%s", msg);
         #ifdef USER_UART
         rui_uart_send(RUI_UART1, msg, strlen(msg));
         #endif
-   	 	delay_ms(1000);    
+   	 	rui_delay_ms(1000);    
 
         sprintf(msg, "Device will Reset after 1s...\r\n");
         RUI_LOG_PRINTF("%s", msg);
         #ifdef USER_UART
         rui_uart_send(RUI_UART1, msg, strlen(msg));
         #endif
-    	delay_ms(1000);
+    	rui_delay_ms(1000);
         
 		rui_device_reset();
         return;
@@ -382,8 +382,25 @@ void at_parse(char *cmd)
         }
         
         RUI_LOG_PRINTF("gsm_cmd: %s",gsm_cmd);
-        rui_cellular_send(gsm_cmd);
-        rui_cellular_response(gsm_rsp, 256, 500 * 60);
+        if (strstr(gsm_cmd,"AT+QIOPEN")!= NULL)//open
+        {
+            rui_cellular_send(gsm_cmd);
+            rui_cellular_response(gsm_rsp, 256, 500 * 60);
+            memset(gsm_rsp,0,256);
+            rui_cellular_response(gsm_rsp, 256, 500 * 20);
+
+        }
+        else if (strstr(gsm_cmd,"AT+QISEND")!= NULL)//send
+        {
+            rui_cellular_send(gsm_cmd);
+            rui_delay_ms(1000);
+        }
+        else
+        {
+            rui_cellular_send(gsm_cmd);
+            rui_cellular_response(gsm_rsp, 256, 500 * 60);
+        }
+
         return;
     }
     //at+send=cellular:XXX
@@ -418,7 +435,7 @@ void at_parse(char *cmd)
          sprintf(gsm_cmd,"AT+QISEND=0,%d",strlen(send_data));
          RUI_LOG_PRINTF("gsm_cmd: %s",gsm_cmd);
          rui_cellular_send(gsm_cmd);
-		 delay_ms(1000);
+		 rui_delay_ms(1000);
          rui_cellular_send(send_data);
          memset(gsm_rsp,0,256);
          rui_cellular_response(gsm_rsp, 256, 500 * 20);
@@ -564,7 +581,7 @@ void at_parse(char *cmd)
          sprintf(gsm_cmd,"AT+QISEND=0,%d",strlen(hologram_cmd));
          RUI_LOG_PRINTF("gsm_cmd: %s",gsm_cmd);
          rui_cellular_send(gsm_cmd);
-         delay_ms(1000);
+         rui_delay_ms(1000);
          rui_cellular_send(hologram_cmd);
          memset(gsm_rsp,0,256);
          rui_cellular_response(gsm_rsp, 256, 500 * 60);
@@ -608,7 +625,7 @@ void at_parse(char *cmd)
          sprintf(gsm_cmd,"AT+QISEND=0,%d",strlen(hologram_cmd));
          RUI_LOG_PRINTF("gsm_cmd: %s",gsm_cmd);
          rui_cellular_send(gsm_cmd);
-         delay_ms(1000);
+         rui_delay_ms(1000);
          rui_cellular_send(hologram_cmd);
          memset(gsm_rsp,0,256);
          rui_cellular_response(gsm_rsp, 256, 500 * 60);
