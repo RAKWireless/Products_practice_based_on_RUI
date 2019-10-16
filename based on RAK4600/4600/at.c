@@ -534,7 +534,7 @@ void at_parse(char *cmd)
     //at+get_config=lora:status
     if(strstr(cmd,"lora:status")!= NULL)
     {
-        rui_lora_get_status(&lora_status);
+        rui_lora_get_status(true, &lora_status);
         rui_at_response(true, NULL, RAK_OK);
         return;
     }
