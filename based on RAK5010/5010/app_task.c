@@ -1,5 +1,3 @@
-#include "board_basic.h"
-#include "boards.h"
 #include <string.h>
 #include "rui.h"
 #include "lis3dh.h"

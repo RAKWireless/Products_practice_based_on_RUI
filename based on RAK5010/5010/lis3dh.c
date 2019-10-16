@@ -28,11 +28,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-#include "nrf_drv_twi.h"
-#include "nrf_gpio.h"
-#include "nrf_delay.h"
-#include "app_util_platform.h"
-#include "board_basic.h"
 #include "rui.h"
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/

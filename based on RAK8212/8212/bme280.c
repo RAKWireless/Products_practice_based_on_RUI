@@ -51,8 +51,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-#include "app_util_platform.h"
-#include "board_basic.h"
 #include "rui.h"
 
 /**\name Internal macros */
@@ -234,7 +232,7 @@ int8_t stream_sensor_data_forced_mode(struct bme280_dev *dev)
 
     rslt = bme280_set_sensor_settings(settings_sel, dev);
 
-    DPRINTF(LOG_INFO, "Temperature, Pressure, Humidity\r\n");
+    //DPRINTF(LOG_INFO, "Temperature, Pressure, Humidity\r\n");
     /* Continuously stream sensor data */
     while (1)
     {

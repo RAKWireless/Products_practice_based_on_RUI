@@ -6,7 +6,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-#include "board_basic.h"
 #include "rui.h"
 #include "lps22hb.h"
 #include "math.h"

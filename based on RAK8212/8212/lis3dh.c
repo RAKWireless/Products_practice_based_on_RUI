@@ -28,11 +28,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-#include "nrf_drv_twi.h"
-#include "nrf_gpio.h"
-#include "nrf_delay.h"
-#include "app_util_platform.h"
-#include "board_basic.h"
 #include "rui.h"
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -125,7 +120,7 @@ int lis3dh_init(void)
     {
         return -1;
     }
-    response = LIS3DH_SetInt1Threshold(LIS3DH_INT1_THRESHOLD);
+    response = LIS3DH_SetInt1Threshold(5);
     if(response==1)
     {
     
