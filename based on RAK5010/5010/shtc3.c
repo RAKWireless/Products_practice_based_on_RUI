@@ -10,8 +10,12 @@
 // Compiler  :  Armcc
 // Brief     :  Sensor Layer: Implementation of functions for sensor access.
 //==============================================================================
-#include "shtc3.h"
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
 #include "rui.h"
+#include "shtc3.h"
+
 
 typedef enum{
   READ_ID            = 0xEFC8, // command: read ID register
