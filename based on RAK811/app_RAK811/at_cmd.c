@@ -380,42 +380,43 @@ static void atcmd_help(int argc, char *argv[])
     RUI_LOG_PRINTF("  at+version\r\n");
     RUI_LOG_PRINTF("  at+help\r\n");
     RUI_LOG_PRINTF("  at+run\r\n");
-    RUI_LOG_PRINTF("  at+set_config=device:restart\r\n");    
-    RUI_LOG_PRINTF("  at+set_config=device:boot\r\n");    
+    RUI_LOG_PRINTF("  at+set_config=device:restart\r\n");       
     RUI_LOG_PRINTF("  at+set_config=device:sleep:X\r\n");
-    RUI_LOG_PRINTF("  at+get_config=device:status\r\n");
-    #ifndef STM32L073xx   
-        RUI_LOG_PRINTF("  at+set_config=device:gpio:X:Y\r\n");
-        RUI_LOG_PRINTF("  at+set_config=device:uart:X:Y\r\n");
-        RUI_LOG_PRINTF("  at+set_config=device:uart_mode:X:Y\r\n");
-        RUI_LOG_PRINTF("  at+set_config=device:i2c:X:YY:ZZ:LL\r\n");        
-        RUI_LOG_PRINTF("  at+get_config=device:adc:X\r\n");
-        RUI_LOG_PRINTF("  at+get_config=device:gpio:X\r\n");    
-        RUI_LOG_PRINTF("  at+send=uart:X:YYY\r\n");   
-    #endif 
+    RUI_LOG_PRINTF("  at+set_config=device:boot\r\n"); 
+    RUI_LOG_PRINTF("  at+get_config=device:status\r\n"); 
+    
+    RUI_LOG_PRINTF("  at+set_config=device:uart:X:Y\r\n");
+    RUI_LOG_PRINTF("  at+set_config=device:uart_mode:X:Y\r\n");
+    RUI_LOG_PRINTF("  at+send=uart:X:YYY\r\n"); 
+    RUI_LOG_PRINTF("  at+set_config=device:gpio:X:Y\r\n");
+    RUI_LOG_PRINTF("  at+get_config=device:gpio:X\r\n"); 
+    RUI_LOG_PRINTF("  at+get_config=device:adc:X\r\n");
+    RUI_LOG_PRINTF("  at+set_config=device:i2c:X:YY:ZZ:LL\r\n"); 
     RUI_LOG_PRINTF("\r\n");
+
     RUI_LOG_PRINTF("LoRaWAM AT commands:\r\n");
     RUI_LOG_PRINTF("  at+join\r\n");
     RUI_LOG_PRINTF("  at+send=lora:X:YYY\r\n");
-    RUI_LOG_PRINTF("  at+set_config=lora:work_mode:X\r\n");
-    RUI_LOG_PRINTF("  at+set_config=lora:join_mode:X\r\n");
-    RUI_LOG_PRINTF("  at+set_config=lora:class:X\r\n");
     RUI_LOG_PRINTF("  at+set_config=lora:region:XXX\r\n");
-    RUI_LOG_PRINTF("  at+set_config=lora:confirm:X\r\n");
-    RUI_LOG_PRINTF("  at+set_config=lora:ch_mask:X:Y\r\n");
+    RUI_LOG_PRINTF("  at+get_config=lora:channel\r\n");    
     RUI_LOG_PRINTF("  at+set_config=lora:dev_eui:XXXX\r\n");
     RUI_LOG_PRINTF("  at+set_config=lora:app_eui:XXXX\r\n");
     RUI_LOG_PRINTF("  at+set_config=lora:app_key:XXXX\r\n");
     RUI_LOG_PRINTF("  at+set_config=lora:dev_addr:XXXX\r\n");
     RUI_LOG_PRINTF("  at+set_config=lora:apps_key:XXXX\r\n");
-    RUI_LOG_PRINTF("  at+set_config=lora:nwks_key:XXXX\r\n");
-    RUI_LOG_PRINTF("  at+set_config=lora:adr:X\r\n");
+    RUI_LOG_PRINTF("  at+set_config=lora:nwks_key:XXXX\r\n");    
+    RUI_LOG_PRINTF("  at+set_config=lora:join_mode:X\r\n");
+    RUI_LOG_PRINTF("  at+set_config=lora:work_mode:X\r\n");
+    RUI_LOG_PRINTF("  at+set_config=lora:ch_mask:X:Y\r\n");
+    RUI_LOG_PRINTF("  at+set_config=lora:class:X\r\n");
+    RUI_LOG_PRINTF("  at+set_config=lora:confirm:X\r\n");    
     RUI_LOG_PRINTF("  at+set_config=lora:dr:X\r\n");
     RUI_LOG_PRINTF("  at+set_config=lora:tx_power:X\r\n");
-    // RUI_LOG_PRINTF("  at+set_config=lora:send_interval:X:Y\r\n");
-    RUI_LOG_PRINTF("  at+get_config=lora:status\r\n");
-    RUI_LOG_PRINTF("  at+get_config=lora:channel\r\n");
+    RUI_LOG_PRINTF("  at+set_config=lora:adr:X\r\n");
+    RUI_LOG_PRINTF("  at+set_config=lora:send_interval:X:Y\r\n");
+    RUI_LOG_PRINTF("  at+get_config=lora:status\r\n");    
     RUI_LOG_PRINTF("\r\n");
+    
     RUI_LOG_PRINTF("LoRaP2P AT commands:\r\n");
     RUI_LOG_PRINTF("  at+set_config=lorap2p:XXX:Y:Z:A:B:C\r\n");
     RUI_LOG_PRINTF("  at+send=lorap2p:XXX\r\n");    
