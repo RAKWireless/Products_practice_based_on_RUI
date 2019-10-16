@@ -18,12 +18,12 @@ void app_task(void * p_context)
     uint8_t gsm_rsp[256] = {0};
     uint8_t send_data[256] = {0}; 
     uint8_t cellular_status = 1;
-    double temp = 0;
-    double humidity = 0;
-    double pressure = 0;
-    float x = 0;
-    float y = 0;
-    float z = 0;
+   	float temp = 0;
+    float humidity = 0;
+    float pressure = 0;
+    int x = 0;
+    int y = 0;
+    int z = 0;
     float magnetic_x = 0;
     float magnetic_y = 0;
     float magnetic_z = 0;
@@ -45,15 +45,17 @@ void app_task(void * p_context)
     RUI_LOG_PRINTF("temperature = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(temp));
     RUI_LOG_PRINTF("humidity = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(humidity));
     RUI_LOG_PRINTF("pressure = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(pressure)); 
-
+        float _x = 0;
+        float _y = 0;
+        float _z = 0;
     lis3dh_twi_init();
     get_lis3dh_data(&x,&y,&z);
-    x =x * 4000/65536;
-    y =y * 4000/65536;
-    z =z * 4000/65536;   
-        RUI_LOG_PRINTF("acceleration x = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(x));
-        RUI_LOG_PRINTF("acceleration y = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(y));
-        RUI_LOG_PRINTF("acceleration z = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(z));
+        _x =x * 4000/65536;
+        _y =y * 4000/65536;
+        _z =z * 4000/65536;   
+        RUI_LOG_PRINTF("acceleration x = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(_x));
+        RUI_LOG_PRINTF("acceleration y = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(_y));
+        RUI_LOG_PRINTF("acceleration z = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(_z));
         lis2mdl_twi_init();
     get_lis2mdl_data(&magnetic_x,&magnetic_y,&magnetic_z);
     RUI_LOG_PRINTF("magnetic x = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(magnetic_x));
@@ -87,7 +89,7 @@ if (cellular_status == 1)
 
     memset(send_data,0,256);
 
-	sprintf(send_data,"Acc:%.2f,%.2f,%.2f; ",x,y,z);
+	sprintf(send_data,"Acc:%.2f,%.2f,%.2f; ",_x,_y,_z);
     sprintf(send_data+strlen(send_data),"Tem:%.2f;Hum:%.2f;Pre:%.2f; ",temp,humidity,pressure);
     sprintf(send_data+strlen(send_data),"Lig:%.2f; ",light);
     sprintf(send_data+strlen(send_data),"Mag:%.2f,%.2f,%.2f; ",magnetic_x,magnetic_y,magnetic_z);

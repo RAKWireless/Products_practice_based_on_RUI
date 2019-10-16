@@ -551,6 +551,7 @@ int8_t bme280_compensate_data(uint8_t sensor_comp, const struct bme280_uncomp_da
 uint32_t get_bme280_humidity(double *humidity);
 uint32_t get_bme280_pressure(double *pressure);
 uint32_t get_bme280_temp(double *temp);
+uint32_t get_bme280_data(float *temp, float *humidity, float *press);
 uint32_t _bme280_sleep_init(void);
 #endif /* BME280_H_ */
 /** @}*/

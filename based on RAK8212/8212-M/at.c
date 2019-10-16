@@ -147,12 +147,12 @@ void at_parse(char *cmd)
     uint8_t sleep_data[10] = {0};    
     uint8_t index = 0;
     uint32_t err_code = 0;
-    double temp = 0;
-    double humidity = 0;
-    double pressure = 0;
-    float x = 0;
-    float y = 0;
-    float z = 0;
+    float temp = 0;
+    float humidity = 0;
+    float pressure = 0;
+    int x = 0;
+    int y = 0;
+    int z = 0;
     float magnetic_x = 0;
     float magnetic_y = 0;
     float magnetic_z = 0;
@@ -301,14 +301,17 @@ void at_parse(char *cmd)
     }
     if(strstr(cmd,"device:status")!= NULL)
     {
+        float _x = 0;
+        float _y = 0;
+        float _z = 0;
         lis3dh_twi_init();
         get_lis3dh_data(&x,&y,&z);
-        x =x * 4000/65536;
-        y =y * 4000/65536;
-        z =z * 4000/65536;   
-        RUI_LOG_PRINTF("acceleration x = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(x));
-        RUI_LOG_PRINTF("acceleration y = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(y));
-        RUI_LOG_PRINTF("acceleration z = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(z));
+        _x =x * 4000/65536;
+        _y =y * 4000/65536;
+        _z =z * 4000/65536;   
+        RUI_LOG_PRINTF("acceleration x = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(_x));
+        RUI_LOG_PRINTF("acceleration y = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(_y));
+        RUI_LOG_PRINTF("acceleration z = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(_z));
         memset(lat_data,0,20);        
         rui_gps_get(&g_gps_data);
         sprintf(lat_data,"%lf",g_gps_data.Latitude);
@@ -318,7 +321,7 @@ void at_parse(char *cmd)
         RUI_LOG_PRINTF("gps Longitude(0-E,1-W):%d,%s",g_gps_data.LongitudaEW,lon_data);
 		
     memset(send_data,0,256); 
-    sprintf(send_data,"Acc:%.2f,%.2f,%.2f; ",x,y,z);
+    sprintf(send_data,"Acc:%.2f,%.2f,%.2f; ",_x,_y,_z);
     sprintf(send_data+strlen(send_data),"Lat(0-N,1-S):%d,%s,Lon(0-E,1-W):%d,%s; ",g_gps_data.LatitudeNS,lat_data,g_gps_data.LongitudaEW,lon_data); 
 
 
@@ -527,11 +530,14 @@ void at_parse(char *cmd)
      //at+send=hologram:sensor
      if(strstr(cmd,"at+send=hologram:sensor")!= NULL)
      {
+        float _x = 0;
+        float _y = 0;
+        float _z = 0;
         lis3dh_twi_init();
         get_lis3dh_data(&x,&y,&z);
-        x =x * 4000/65536;
-        y =y * 4000/65536;
-        z =z * 4000/65536;   
+    _x =x * 4000/65536;
+    _y =y * 4000/65536;
+    _z =z * 4000/65536;   
 
         memset(lat_data,0,20);        
         rui_gps_get(&g_gps_data);
@@ -543,7 +549,7 @@ void at_parse(char *cmd)
          memset(send_data,0,256);   
          memset(hologram_cmd,0,256); 
 
-    sprintf(send_data,"Acc:%.2f,%.2f,%.2f; ",x,y,z);
+    sprintf(send_data,"Acc:%.2f,%.2f,%.2f; ",_x,_y,_z);
 
     sprintf(send_data+strlen(send_data),"Lat(0-N,1-S):%d,%s,Lon(0-E,1-W):%d,%s; ",g_gps_data.LatitudeNS,lat_data,g_gps_data.LongitudaEW,lon_data); 
 

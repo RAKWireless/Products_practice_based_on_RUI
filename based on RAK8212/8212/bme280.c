@@ -281,7 +281,7 @@ uint32_t _bme280_sleep_init(void)
     return rslt;
 }
 
-uint32_t get_bme280_data(double *temp, double *humidity, double *press)
+uint32_t get_bme280_data(float *temp, float *humidity, float *press)
 {
     int8_t rslt = BME280_OK;
     int count=1;
@@ -296,9 +296,9 @@ uint32_t get_bme280_data(double *temp, double *humidity, double *press)
         rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, &dev);
         //print_sensor_data(&comp_data);
     }
-    *temp = comp_data.temperature;
-    *humidity = comp_data.humidity;
-    *press = comp_data.pressure;
+    *temp = (float)comp_data.temperature;
+    *humidity = (float)comp_data.humidity;
+    *press = (float)comp_data.pressure;
 }
 uint32_t get_bme280_humidity(double *humidity)
 {

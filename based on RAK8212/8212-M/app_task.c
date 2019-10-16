@@ -15,9 +15,10 @@ void app_task(void * p_context)
     uint8_t gsm_rsp[256] = {0};
     uint8_t send_data[256] = {0}; 
     uint8_t cellular_status = 1;
-    float x = 0;
-    float y = 0;
-    float z = 0;
+    int x = 0;
+    int y = 0;
+    int z = 0;
+
     RUI_GPS_DATA g_gps_data = {0};
     uint8_t lon_data[20] = {0}; 
     uint8_t lat_data[20] = {0}; 
@@ -31,14 +32,17 @@ void app_task(void * p_context)
 
     //get sensor data
 
+        float _x = 0;
+        float _y = 0;
+        float _z = 0;
     lis3dh_twi_init();
     get_lis3dh_data(&x,&y,&z);
-    x =x * 4000/65536;
-    y =y * 4000/65536;
-    z =z * 4000/65536;   
-    RUI_LOG_PRINTF("acceleration x = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(x));
-    RUI_LOG_PRINTF("acceleration y = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(y));
-    RUI_LOG_PRINTF("acceleration z = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(z)); 
+        _x =x * 4000/65536;
+        _y =y * 4000/65536;
+        _z =z * 4000/65536;   
+        RUI_LOG_PRINTF("acceleration x = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(_x));
+        RUI_LOG_PRINTF("acceleration y = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(_y));
+        RUI_LOG_PRINTF("acceleration z = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(_z));
 
     memset(lat_data,0,20);        
     rui_gps_get(&g_gps_data);
@@ -64,7 +68,7 @@ if (cellular_status == 1)
 
     memset(send_data,0,256);
 
-	sprintf(send_data,"Acc:%.2f,%.2f,%.2f; ",x,y,z);
+	sprintf(send_data,"Acc:%.2f,%.2f,%.2f; ",_x,_y,_z);
 
     sprintf(send_data+strlen(send_data),"Lat(0-N,1-S):%d,%s,Lon(0-E,1-W):%d,%s; ",g_gps_data.LatitudeNS,lat_data,g_gps_data.LongitudaEW,lon_data); 
 

@@ -150,12 +150,12 @@ void at_parse(char *cmd)
     uint8_t sleep_data[10] = {0};    
     uint8_t index = 0;
     uint32_t err_code = 0;
-    double temp = 0;
-    double humidity = 0;
-    double pressure = 0;
-    float x = 0;
-    float y = 0;
-    float z = 0;
+    float temp = 0;
+    float humidity = 0;
+    float pressure = 0;
+    int x = 0;
+    int y = 0;
+    int z = 0;
     float magnetic_x = 0;
     float magnetic_y = 0;
     float magnetic_z = 0;
@@ -304,16 +304,18 @@ void at_parse(char *cmd)
     }
     if(strstr(cmd,"device:status")!= NULL)
     {
-        
+        float _x = 0;
+        float _y = 0;
+        float _z = 0;
         get_lps22hb_data(&pressure);
         RUI_LOG_PRINTF("pressure = %d hPa\r\n",pressure);
         get_lis3dh_data(&x,&y,&z);
-        x =x * 4000/65536;
-        y =y * 4000/65536;
-        z =z * 4000/65536;   
-        RUI_LOG_PRINTF("acceleration x = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(x));
-        RUI_LOG_PRINTF("acceleration y = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(y));
-        RUI_LOG_PRINTF("acceleration z = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(z));
+        _x =x * 4000/65536;
+        _y =y * 4000/65536;
+        _z =z * 4000/65536;   
+        RUI_LOG_PRINTF("acceleration x = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(_x));
+        RUI_LOG_PRINTF("acceleration y = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(_y));
+        RUI_LOG_PRINTF("acceleration z = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(_z));
         get_opt3001_data(&light);
         RUI_LOG_PRINTF("light strength = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(light));
         SHTC3_GetTempAndHumi(&temp,&humidity);
@@ -330,7 +332,7 @@ void at_parse(char *cmd)
         RUI_LOG_PRINTF("Battery Voltage = "NRF_LOG_FLOAT_MARKER" V !\r\n", NRF_LOG_FLOAT(voltage));
 
     memset(send_data,0,256); 
-    sprintf(send_data,"Acc:%.2f,%.2f,%.2f; ",x,y,z);
+    sprintf(send_data,"Acc:%.2f,%.2f,%.2f; ",_x,_y,_z);
     sprintf(send_data+strlen(send_data),"Tem:%.2f;Hum:%.2f; ",temp,humidity);
     sprintf(send_data+strlen(send_data),"Pre:%.2f; ",pressure);
     sprintf(send_data+strlen(send_data),"Lig:%.2f; ",light);
@@ -548,11 +550,14 @@ void at_parse(char *cmd)
      //at+send=hologram:sensor
      if(strstr(cmd,"at+send=hologram:sensor")!= NULL)
      {
+        float _x = 0;
+        float _y = 0;
+        float _z = 0;
         get_lps22hb_data(&pressure);
         get_lis3dh_data(&x,&y,&z);
-        x =x * 4000/65536;
-        y =y * 4000/65536;
-        z =z * 4000/65536;   
+        _x =x * 4000/65536;
+        _y =y * 4000/65536;
+        _z =z * 4000/65536;   
         get_opt3001_data(&light);
         SHTC3_GetTempAndHumi(&temp,&humidity);
 
@@ -567,7 +572,7 @@ void at_parse(char *cmd)
          memset(send_data,0,256);   
          memset(hologram_cmd,0,256); 
 
-    sprintf(send_data,"Acc:%.2f,%.2f,%.2f; ",x,y,z);
+    sprintf(send_data,"Acc:%.2f,%.2f,%.2f; ",_x,_y,_z);
 
     sprintf(send_data+strlen(send_data),"Tem:%.2f;Hum:%.2f; ",temp,humidity);
 
