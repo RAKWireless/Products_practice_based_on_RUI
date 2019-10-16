@@ -116,7 +116,7 @@ if (cellular_status == 1)
     sprintf(gsm_cmd,"AT+QISEND=0,%d",strlen(send_data));
     RUI_LOG_PRINTF("gsm_cmd: %s",gsm_cmd);
     rui_cellular_send(gsm_cmd);
-    delay_ms(2000);
+    rui_delay_ms(2000);
     rui_cellular_send(send_data);
     memset(gsm_rsp,0,256);
     rui_cellular_response(gsm_rsp, 256, 500 * 20);  
