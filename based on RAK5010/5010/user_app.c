@@ -20,7 +20,7 @@ void sensor_on(void)
     opt3001_init();
 	//shtc3 init
     SHTC3_Wakeup();
-    //lps22hb init 0 wake up
+    //lps22hb init 1 wake up
     lps22hb_mode(1);
 
 }

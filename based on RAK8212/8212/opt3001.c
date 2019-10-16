@@ -153,7 +153,7 @@ int get_opt3001_data(float *light_data)
 
 void opt3001_deinit()
 {
-    rak_i2c_deinit();
+    
 }
 
 /* Register addresses */

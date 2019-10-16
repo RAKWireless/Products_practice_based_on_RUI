@@ -78,7 +78,7 @@ void user_delay_ms(uint32_t period)
      * Return control or wait,
      * for a period amount of milliseconds
      */
-    rui_delay_us(period);
+    rui_delay_ms(period);
 }
 
 int8_t user_spi_read(uint8_t dev_id, uint8_t reg_addr, uint8_t *reg_data, uint16_t len)
@@ -353,7 +353,7 @@ uint32_t get_bme280_temp(double *temp)
 }
 void bme280_deinit()
 {
-    //rak_spi_deinit();
+
 }
 /*!
  * @brief This internal API puts the device to sleep mode.

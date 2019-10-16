@@ -264,7 +264,7 @@ void get_lis2mdl_data(float *magnetic_x, float *magnetic_y, float *magnetic_z)
 
 void lis2mdl_deinit()
 {
-    rak_i2c_deinit();
+
 }
 
 /**
