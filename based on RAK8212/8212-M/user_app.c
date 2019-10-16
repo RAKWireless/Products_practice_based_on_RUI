@@ -6,8 +6,8 @@ RUI_I2C_ST st = {0};
 void sensor_on(void)
 {
 
-    st.PIN_SDA = 14;
-    st.PIN_SCL = 13;
+    st.PIN_SDA = 19;
+    st.PIN_SCL = 18;
     st.FREQUENCY = RUI_I2C_FREQ_400K;
     rui_i2c_init(&st);
 
