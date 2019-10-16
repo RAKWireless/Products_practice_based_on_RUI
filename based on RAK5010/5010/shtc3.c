@@ -6,11 +6,10 @@
 // Author    :  RFU
 // Date      :  24-Nov-2017
 // Controller:  STM32F100RB
-// IDE       :  µVision V5.17.0.0
+// IDE       :  ÂµVision V5.17.0.0
 // Compiler  :  Armcc
 // Brief     :  Sensor Layer: Implementation of functions for sensor access.
 //==============================================================================
-#include "board_basic.h"
 #include "shtc3.h"
 #include "rui.h"
 
@@ -37,7 +36,7 @@ void SHTC3_Init(){
 
 //------------------------------------------------------------------------------
 static float SHTC3_CalcTemperature(uint16_t rawValue){
-  // calculate temperature [°C]
+  // calculate temperature [Â°C]
   // T = -45 + 175 * rawValue / 2^16
   return 175 * (float)rawValue / 65536.0f - 45.0f;
 }

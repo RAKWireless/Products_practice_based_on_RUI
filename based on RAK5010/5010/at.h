@@ -37,7 +37,6 @@ at+set_config=hologram:----set hologram card id\n \
 at+send=hologram:user:----send user define data\n \
 at+send=hologram:sensor----send device data\n \
 at+set_config=ble:work_mode:----ble mode choose\n \
-at+set_config=device:uart_mode:X:Y----set uart mode\n \
 at+set_config=uart:work_mode:x----set uart work mode\\n"
 
 
