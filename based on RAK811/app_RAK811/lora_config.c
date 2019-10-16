@@ -1,10 +1,7 @@
 #include <stdint.h>
 #include <string.h>
-#include "board.h"
-#include "app.h"
 #include "at_cmd.h"
 #include "lora_config.h"
-#include "rw_lora.h"
 #include "rui.h"
 
 
@@ -26,14 +23,14 @@ struct board_config_cmd cmd_str[]=
     "restart",restart,
     "sleep",sleep,
     "boot",boot,
+    "status",status,
     "uart",uart,
     "uart_mode",uart_mode,
     "gpio",gpio,
     "adc",adc,
     "i2c",i2c,
-    "channel",channel,
-    "status",status,
     "region",region,
+    "channel",channel,     
     "dev_eui",dev_eui,
     "app_eui",app_eui,
     "app_key",app_key,
@@ -49,17 +46,6 @@ struct board_config_cmd cmd_str[]=
     "tx_power",tx_power,
     "adr",adr,
     "send_interval",send_interval,
-
-    "gps",gps,
-    "gps_timeout",gps_timeout,
-    "acc",acceleration,
-    "magn",magnetic,
-    "gyro",gyroscope,
-    "pressure",pressure,
-    "temperature",temperature,
-    "humidity",humidity,
-    "light_strength",light_strength,
-    "voltage",voltage,
 };
 /** Structure for registering CONFIG commands */
 struct config_cmd
@@ -325,9 +311,9 @@ static uint32_t handle_device_config(lora_config_t *config, int argc, char *argv
             {
                 switch(atoi(argv[2]))
                 {
-                    case 0: RUI_LOG_PRINTF("Current AT uart work mode:normal mode\r\n"); 
+                    case RUI_UART_NORAMAL: RUI_LOG_PRINTF("Current AT uart work mode:normal mode\r\n"); 
                         break;
-                    case 1:RUI_LOG_PRINTF("Current AT uart work mode:unvarnished transmit mode\r\n");
+                    case RUI_UART_UNVARNISHED:RUI_LOG_PRINTF("Current AT uart work mode:unvarnished transmit mode\r\n");
                         break;   
                 }
             }else return -1;
@@ -672,23 +658,12 @@ static uint32_t  handle_lorap2p_config(RUI_LORA_STATUS_T *config, int argc, char
 
 static uint32_t handle_device_status(void)
 {
-    float x0,y0,z0;
-    float temp_f=0;
-
     RUI_LOG_PRINTF("OK.\r\n*************************************************\r\n===============Device Status List================\r\n"); 
-    #ifdef STM32L073xx
-        RUI_LOG_PRINTF("Board Core:  S76G_B\r\n");//S76G_B
-        RUI_LOG_PRINTF("MCU:  STM32L073RZ\r\n");
-    #elif defined STM32L071xx
-        RUI_LOG_PRINTF("Board Core:  RAK4200\r\n");
-        RUI_LOG_PRINTF("MCU:  STM32L071KB\r\n");
-    #elif defined STM32L1XX
-        RUI_LOG_PRINTF("Board Core:  RAK811\r\n");
-        RUI_LOG_PRINTF("MCU:  STM32L151CB_A\r\n");
-    #endif    
-        RUI_LOG_PRINTF("LoRa chip:  SX1276\r\n"); 
-        RUI_LOG_PRINTF("\r\n"); 
-    
+
+    RUI_LOG_PRINTF("Board Core:  RAK811\r\n");
+    RUI_LOG_PRINTF("MCU:  STM32L151CB_A\r\n");   
+    RUI_LOG_PRINTF("LoRa chip:  SX1276\r\n"); 
+    RUI_LOG_PRINTF("\r\n");     
 
     RUI_LOG_PRINTF("===================List End======================\r\n"); 
     RUI_LOG_PRINTF("*************************************************\r\n");       
