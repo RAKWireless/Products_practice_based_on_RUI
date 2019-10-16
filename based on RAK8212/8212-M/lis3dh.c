@@ -223,7 +223,7 @@ void get_lis3dh_data(int *x, int *y, int *z)
 
 void lis3dh_deinit()
 {
-    rak_i2c_deinit();
+
 }
 
 
