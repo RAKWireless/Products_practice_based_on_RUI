@@ -20,7 +20,6 @@ void sensor_on(void)
 void sensor_off(void)
 {
     lis3dh_sleep_init();
-
 }
 
 void main(void)

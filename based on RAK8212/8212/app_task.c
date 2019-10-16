@@ -46,16 +46,20 @@ void app_task(void * p_context)
     RUI_LOG_PRINTF("humidity = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(humidity));
     RUI_LOG_PRINTF("pressure = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(pressure)); 
 
+    lis3dh_twi_init();
     get_lis3dh_data(&x,&y,&z);
     x =x * 4000/65536;
     y =y * 4000/65536;
     z =z * 4000/65536;   
-
+        RUI_LOG_PRINTF("acceleration x = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(x));
+        RUI_LOG_PRINTF("acceleration y = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(y));
+        RUI_LOG_PRINTF("acceleration z = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(z));
+        lis2mdl_twi_init();
     get_lis2mdl_data(&magnetic_x,&magnetic_y,&magnetic_z);
     RUI_LOG_PRINTF("magnetic x = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(magnetic_x));
     RUI_LOG_PRINTF("magnetic y = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(magnetic_y));
     RUI_LOG_PRINTF("magnetic z = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(magnetic_z));
-
+    opt3001_twi_init();
     get_opt3001_data(&light);
     RUI_LOG_PRINTF("light strength = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(light));
 

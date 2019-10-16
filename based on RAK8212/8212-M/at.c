@@ -301,7 +301,7 @@ void at_parse(char *cmd)
     }
     if(strstr(cmd,"device:status")!= NULL)
     {
-      
+        lis3dh_twi_init();
         get_lis3dh_data(&x,&y,&z);
         x =x * 4000/65536;
         y =y * 4000/65536;
@@ -527,6 +527,7 @@ void at_parse(char *cmd)
      //at+send=hologram:sensor
      if(strstr(cmd,"at+send=hologram:sensor")!= NULL)
      {
+        lis3dh_twi_init();
         get_lis3dh_data(&x,&y,&z);
         x =x * 4000/65536;
         y =y * 4000/65536;

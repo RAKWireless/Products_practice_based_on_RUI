@@ -308,17 +308,17 @@ void at_parse(char *cmd)
     RUI_LOG_PRINTF("temperature = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(temp));
     RUI_LOG_PRINTF("humidity = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(humidity));
     RUI_LOG_PRINTF("pressure = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(pressure)); 
-
+    lis3dh_twi_init();
     get_lis3dh_data(&x,&y,&z);
     x =x * 4000/65536;
     y =y * 4000/65536;
     z =z * 4000/65536;   
-
+    lis2mdl_twi_init();
     get_lis2mdl_data(&magnetic_x,&magnetic_y,&magnetic_z);
     RUI_LOG_PRINTF("magnetic x = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(magnetic_x));
     RUI_LOG_PRINTF("magnetic y = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(magnetic_y));
     RUI_LOG_PRINTF("magnetic z = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(magnetic_z));
-
+    opt3001_twi_init();
     get_opt3001_data(&light);
     RUI_LOG_PRINTF("light strength = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(light));
 
@@ -546,11 +546,14 @@ void at_parse(char *cmd)
      if(strstr(cmd,"at+send=hologram:sensor")!= NULL)
      {
     get_bme280_data(&temp,&humidity,&pressure);
+    lis3dh_twi_init();
     get_lis3dh_data(&x,&y,&z);
     x =x * 4000/65536;
     y =y * 4000/65536;
     z =z * 4000/65536;   
+    lis2mdl_twi_init();
     get_lis2mdl_data(&magnetic_x,&magnetic_y,&magnetic_z);
+    opt3001_twi_init();
     get_opt3001_data(&light);
 
 

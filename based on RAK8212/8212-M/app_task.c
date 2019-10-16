@@ -31,11 +31,14 @@ void app_task(void * p_context)
 
     //get sensor data
 
-        
-        get_lis3dh_data(&x,&y,&z);
-        x =x * 4000/65536;
-        y =y * 4000/65536;
-        z =z * 4000/65536;   
+    lis3dh_twi_init();
+    get_lis3dh_data(&x,&y,&z);
+    x =x * 4000/65536;
+    y =y * 4000/65536;
+    z =z * 4000/65536;   
+    RUI_LOG_PRINTF("acceleration x = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(x));
+    RUI_LOG_PRINTF("acceleration y = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(y));
+    RUI_LOG_PRINTF("acceleration z = "NRF_LOG_FLOAT_MARKER"",NRF_LOG_FLOAT(z)); 
 
     memset(lat_data,0,20);        
     rui_gps_get(&g_gps_data);
