@@ -379,7 +379,7 @@ static void atcmd_help(int argc, char *argv[])
     RUI_LOG_PRINTF("Device AT commands:\r\n");
     RUI_LOG_PRINTF("  at+version\r\n");
     RUI_LOG_PRINTF("  at+help\r\n");
-    RUI_LOG_PRINTF("  at+run\r\n");
+    RUI_LOG_PRINTF("  at+run\r\n");  //exit boot mode
     RUI_LOG_PRINTF("  at+set_config=device:restart\r\n");       
     RUI_LOG_PRINTF("  at+set_config=device:sleep:X\r\n");
     RUI_LOG_PRINTF("  at+set_config=device:boot\r\n"); 
@@ -416,7 +416,7 @@ static void atcmd_help(int argc, char *argv[])
     RUI_LOG_PRINTF("  at+set_config=lora:send_interval:X:Y\r\n");
     RUI_LOG_PRINTF("  at+get_config=lora:status\r\n");    
     RUI_LOG_PRINTF("\r\n");
-    
+
     RUI_LOG_PRINTF("LoRaP2P AT commands:\r\n");
     RUI_LOG_PRINTF("  at+set_config=lorap2p:XXX:Y:Z:A:B:C\r\n");
     RUI_LOG_PRINTF("  at+send=lorap2p:XXX\r\n");    

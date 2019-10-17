@@ -45,7 +45,7 @@ struct board_config_cmd cmd_str[]=
     "dr",dr,
     "tx_power",tx_power,
     "adr",adr,
-    "send_interval",send_interval,
+    "send_interval",send_interval
 };
 /** Structure for registering CONFIG commands */
 struct config_cmd
@@ -653,9 +653,6 @@ static uint32_t  handle_lorap2p_config(RUI_LORA_STATUS_T *config, int argc, char
     else return -1;
 }
 
-
-#include "inv_mpu.h"
-
 static uint32_t handle_device_status(void)
 {
     RUI_LOG_PRINTF("OK.\r\n*************************************************\r\n===============Device Status List================\r\n"); 
@@ -663,7 +660,7 @@ static uint32_t handle_device_status(void)
     RUI_LOG_PRINTF("Board Core:  RAK811\r\n");
     RUI_LOG_PRINTF("MCU:  STM32L151CB_A\r\n");   
     RUI_LOG_PRINTF("LoRa chip:  SX1276\r\n"); 
-    RUI_LOG_PRINTF("\r\n");     
+    RUI_LOG_PRINTF("\r\n");    
 
     RUI_LOG_PRINTF("===================List End======================\r\n"); 
     RUI_LOG_PRINTF("*************************************************\r\n");       

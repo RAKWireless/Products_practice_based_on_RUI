@@ -31,7 +31,7 @@ void bsp_i2c_init(void)
     I2c_1.INSTANCE_ID = 1;
     I2c_1.PIN_SDA = I2C_SDA;
     I2c_1.PIN_SCL = I2C_SCL;
-    I2c_1.FREQUENCY = RUI_I2C_FREQ_400K;
+    I2c_1.FREQUENCY = RUI_I2C_FREQ_100K;
 
     rui_i2c_init(&I2c_1);
 
