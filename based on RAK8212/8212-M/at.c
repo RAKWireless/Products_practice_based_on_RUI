@@ -555,6 +555,8 @@ void at_parse(char *cmd)
 
 
          hologram_cmd_packet(g_rui_cfg_t.g_cellular_cfg_t.hologram_card_num,send_data);
+         RUI_LOG_PRINTF("send_data: %s",send_data);
+         RUI_LOG_PRINTF("hologram_cmd: %s",hologram_cmd); 
          //open tcp client with remote server
          rui_cellular_send("AT+QIOPEN=1,0,\"TCP\",\"cloudsocket.hologram.io\",9999,0,1");
          rui_cellular_response(gsm_rsp, 256, 500 * 60);
