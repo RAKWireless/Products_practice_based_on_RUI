@@ -1,4 +1,6 @@
 #include <string.h>
+#include <stdbool.h>
+#include "inner.h"
 #include "rui.h"
 #include "lis3dh.h"
 
@@ -51,6 +53,11 @@ void app_task(void * p_context)
     memset(lon_data,0,20);
     sprintf(lon_data,"%lf",g_gps_data.Longitude);
     RUI_LOG_PRINTF("gps Longitude(0-E,1-W):%d,%s",g_gps_data.LongitudaEW,lon_data);
+memset(send_data,0,256);
+
+	sprintf(send_data,"Acc:%.2f,%.2f,%.2f; ",_x,_y,_z);
+
+    sprintf(send_data+strlen(send_data),"Lat(0-N,1-S):%d,%s,Lon(0-E,1-W):%d,%s; ",g_gps_data.LatitudeNS,lat_data,g_gps_data.LongitudaEW,lon_data); 
 
 
 	//open tcp client with remote server
@@ -66,12 +73,7 @@ if (cellular_status == 1)
     memset(gsm_rsp,0,256);
     rui_cellular_response(gsm_rsp, 256, 500 * 20);    
 
-    memset(send_data,0,256);
-
-	sprintf(send_data,"Acc:%.2f,%.2f,%.2f; ",_x,_y,_z);
-
-    sprintf(send_data+strlen(send_data),"Lat(0-N,1-S):%d,%s,Lon(0-E,1-W):%d,%s; ",g_gps_data.LatitudeNS,lat_data,g_gps_data.LongitudaEW,lon_data); 
-
+    
     //send
     memset(gsm_cmd,0,100);
     sprintf(gsm_cmd,"AT+QISEND=0,%d",strlen(send_data));
