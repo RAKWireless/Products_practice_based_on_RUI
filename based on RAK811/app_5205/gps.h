@@ -129,7 +129,7 @@ uint8_t GpsParseGpsData( int8_t *rxBuffer, int32_t rxBufferSize );
  *
  * \retval altitude
  */
-int16_t GpsGetLatestGpsAltitude( void );
+uint8_t GpsGetLatestGpsAltitude( int32_t* alt );
 
 /*!
  * \brief Format GPS data into numeric and binary formats

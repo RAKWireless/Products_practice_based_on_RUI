@@ -35,13 +35,13 @@ const int32_t MaxWestPosition = 8388608;        // -2^23
 tNmeaGpsData NmeaGpsData;
 
 bool HasFix = false;
-double Latitude = 0;
-double Longitude = 0;
+static double Latitude = 0;
+static double Longitude = 0;
 
 static int32_t LatitudeBinary = 0;
 static int32_t LongitudeBinary = 0;
 
-static int16_t Altitude = 0xFFFF;
+static int32_t Altitude = 0xFFFFFFFF;
 
 static uint32_t PpsCnt = 0;
 
@@ -61,6 +61,7 @@ void GpsPpsHandler( bool *parseData )
     }
 }
 #define GPS_POWER_EN                            14
+uint16_t gps_timeout_cnt=0;  //record gps search satellite timer 
 void GpsInit( void )
 {
     PpsDetected = false;
@@ -73,11 +74,23 @@ void GpsInit( void )
     rui_uart_init(RUI_UART3,BAUDRATE_9600);
 
     GpsStart();
-    RUI_LOG_PRINTF("GPS Init OK.\n");
+    
+    rui_flash_read(RUI_FLASH_USER,&gps_timeout_cnt,2);  //read gps search satellite timer from flash
+
+    if(gps_timeout_cnt == 0)
+    {
+        gps_timeout_cnt = 100;  //set default gps search satellite timer:100s
+        rui_flash_write(RUI_FLASH_USER,&gps_timeout_cnt,2);
+    }
+
+    RUI_LOG_PRINTF("GPS Init OK.GPS timeout:%ds\r\n",gps_timeout_cnt);
+
 }
 
 void GpsStart( void )
 {
+    GpsResetPosition();
+    HasFix = false;
     rui_gpio_rw(RUI_IF_WRITE,&Gps_Power_Ctl,high);
 }
 
@@ -164,7 +177,10 @@ void GpsConvertPositionFromStringToNumerical( void )
         Longitude *= -1;
     }
 }
-
+void GpsConvertAltitudeFromStringToNumerical( void )
+{
+    Altitude = atoi( NmeaGpsData.NmeaAltitude ); 
+}
 
 uint8_t GpsGetLatestGpsPositionDouble( double *lati, double *longi )
 {
@@ -201,20 +217,19 @@ uint8_t GpsGetLatestGpsPositionBinary( int32_t *latiBin, int32_t *longiBin )
     return status;
 }
 
-int16_t GpsGetLatestGpsAltitude( void )
+uint8_t GpsGetLatestGpsAltitude( int32_t* alt )
 {
-    BoardDisableIrq( );
+    uint8_t status = FAIL;
     if( HasFix == true )
-    {    
-        Altitude = atoi( NmeaGpsData.NmeaAltitude );
+    {
+        status = SUCCESS;
     }
     else
     {
-        Altitude = 0xFFFF;
+        Altitude = 0xFFFFFFFF;
     }
-    BoardEnableIrq( );
-
-    return Altitude;
+    * alt = Altitude;
+    return status;
 }
 
 /*!
@@ -325,7 +340,22 @@ uint8_t GpsParseGpsData( int8_t *rxBuffer, int32_t rxBufferSize )
     }
     // Parse the GPGGA data 
     if( strncmp( ( const char* )NmeaGpsData.NmeaDataType, ( const char* )NmeaDataTypeGPGGA, 5 ) == 0 )
-    {  
+    {
+        // RUI_LOG_PRINTF("%s\r\n",rxBuffer); 
+        uint8_t BCC=0,temp=rxBuffer[1];
+        char* p_temp1;
+        uint8_t f_zz[3]={0};
+        p_temp1 = strstr(rxBuffer,"*");
+        memcpy(f_zz,p_temp1+1,2);
+        BCC = strtol(f_zz,NULL, 16);
+        for(uint8_t z=2;z<rxBufferSize;z++)
+        {
+            if(rxBuffer[z] == '*')break;
+            temp ^=  rxBuffer[z];
+        } 
+
+        if(BCC != temp)return FAIL;
+
         // NmeaUtcTime
         fieldSize = 0;
         while( rxBuffer[i + fieldSize++] != ',' )
@@ -439,9 +469,15 @@ uint8_t GpsParseGpsData( int8_t *rxBuffer, int32_t rxBufferSize )
                 return FAIL;
             }
         }
-        for( j = 0; j < fieldSize; j++, i++ )
-        {
-            NmeaGpsData.NmeaAltitude[j] = rxBuffer[i];
+        memset(&(NmeaGpsData.NmeaAltitude),0,8);
+        for( int8_t z=0, j = 0; j < fieldSize; j++,z++, i++ )
+        {            
+            if(rxBuffer[i] == '.')
+            {
+                z--;
+                continue;
+            }
+            NmeaGpsData.NmeaAltitude[z] = rxBuffer[i];
         }
         // NmeaAltitudeUnit
         fieldSize = 0;
@@ -626,6 +662,8 @@ void GpsFormatGpsData( void )
     }   
     GpsConvertPositionFromStringToNumerical( );
     GpsConvertPositionIntoBinary( );
+    GpsConvertAltitudeFromStringToNumerical( );
+
 }
 
 void GpsResetPosition( void )
