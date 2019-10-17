@@ -109,8 +109,8 @@ void at_parse(char *cmd)
     // at+device:sleep:1
     if(strstr(cmd,"device:sleep:1")!= 0)
     {
-        RUI_LOG_PRINTF("Device has been sleep!");
-        rui_at_response(true, NULL, RAK_OK);
+        RUI_LOG_PRINTF("Device wil go to sleep.");
+        rui_at_response(true, "Device will go to sleep.", RAK_OK);
 
         if(power_flag == 0)
         {
