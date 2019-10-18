@@ -241,7 +241,10 @@ int sensorOpt3001Read(uint16_t *rawData)
         success = (val & DATA_RDY_BIT) == DATA_RDY_BIT;
 
     if (success)
+    {
+        success = sensorWriteReg(REG_RESULT, 0x00, 1);
         success = sensorReadReg(REG_RESULT, (uint8_t*)&val, DATA_LENGTH);
+    }
 
     if (success)
     {
