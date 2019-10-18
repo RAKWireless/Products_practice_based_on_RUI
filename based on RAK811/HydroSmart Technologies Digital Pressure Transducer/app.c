@@ -5,7 +5,6 @@
 #define JOIN_MAX_CNT 6
 static uint8_t JoinCnt=0;
 static bool IsTxDone = false;   //Entry sleep flag
-static RUI_DEVICE_STATUS_T app_device_status; //record device status 
 static RUI_LORA_STATUS_T app_lora_status; //record lora status 
 
 /*******************************************************************************************
@@ -38,7 +37,7 @@ void app_loop(void)
 {
     static uint8_t i=0;
     double P_PSI,Temperature;
-    rui_lora_get_status(&app_lora_status);
+    rui_lora_get_status(false,&app_lora_status);
     if(app_lora_status.IsJoined)  //if LoRaWAN is joined
     {
         if(autosend_flag)
@@ -58,9 +57,9 @@ void app_loop(void)
             if(rui_lora_send(8,a,i) !=0)
             {
                 RUI_LOG_PRINTF("[LoRa]: send Error\r\n");                            
-                if(app_device_status.autosend_status)
+                if(app_lora_status.autosend_status)
                 {
-                    rui_lora_get_status(&app_lora_status);  //The query gets the current lora status 
+                    rui_lora_get_status(false,&app_lora_status);  //The query gets the current lora status 
                     rui_lora_set_send_interval(1,app_lora_status.lorasend_interval);  //start autosend_timer after send success
 
                 }
@@ -108,8 +107,8 @@ void LoRaWANJoined_callback(uint32_t status)
     {
         JoinCnt = 0;
         RUI_LOG_PRINTF("[LoRa]:Joined Successed!\r\n");
-        rui_device_get_status(&app_device_status);//The query gets the current device status 
-        if(app_device_status.autosend_status)
+        rui_lora_get_status(false,&app_lora_status);
+        if(app_lora_status.autosend_status != RUI_AUTO_DISABLE)
         {
             autosend_flag = true;  //set autosend_flag after join LoRaWAN succeeded 
         }       
@@ -119,7 +118,7 @@ void LoRaWANJoined_callback(uint32_t status)
         {
             JoinCnt++;
             RUI_LOG_PRINTF("[LoRa]:Join retry Cnt:%d\n",JoinCnt);
-            rui_lora_get_status(&app_lora_status);
+            rui_lora_get_status(false,&app_lora_status);
             if(app_lora_status.lora_dr > 0)
             {
                 app_lora_status.lora_dr -= 1;
@@ -162,8 +161,8 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T status)
         default:             
             break;
     }     
-    rui_device_get_status(&app_device_status);//The query gets the current device status 
-    if(app_device_status.autosend_status)
+    rui_lora_get_status(false,&app_lora_status); 
+    if(app_lora_status.autosend_status)
     {
         rui_lora_set_send_interval(1,app_lora_status.lorasend_interval);  //start autosend_timer after send success
         IsTxDone=true;  //Sleep flag set true
@@ -199,7 +198,7 @@ void main(void)
 
     rui_init();
     bsp_init();
-
+    
 /*******************************************************************************************
  * Register LoRaMac callback function
  * 
@@ -211,25 +210,17 @@ void main(void)
 
 
 /*******************************************************************************************    
- *The query gets the current device and lora status 
+ *The query gets the current status 
  * 
  * *****************************************************************************************/    
-    rui_device_get_status(&app_device_status);
-    rui_lora_get_status(&app_lora_status);
-    autosendtemp_status = app_device_status.autosend_status;
+    rui_lora_get_status(false,&app_lora_status);
 	
-	if(app_device_status.autosend_status)RUI_LOG_PRINTF("autosend_interval: %us\r\n", app_lora_status.lorasend_interval);
+	if(app_lora_status.autosend_status != RUI_AUTO_DISABLE)RUI_LOG_PRINTF("autosend_interval: %us\r\n", app_lora_status.lorasend_interval);
 /*******************************************************************************************    
  *Init OK ,print board status and auto join LoRaWAN
  * 
  * *****************************************************************************************/  
-    switch(app_device_status.uart_mode)
-    {
-        case RUI_UART_NORAMAL: RUI_LOG_PRINTF("Initialization OK,AT Uart work mode:normal mode, "); 
-            break;
-        case RUI_UART_UNVARNISHED:RUI_LOG_PRINTF("Initialization OK,AT Uart work mode:unvarnished transmit mode, ");
-            break;   
-    }   
+    RUI_LOG_PRINTF("Initialization OK,AT Uart work mode:normal mode, "); 
 
     switch(app_lora_status.work_mode)
 	{
@@ -272,18 +263,17 @@ void main(void)
   
     while(1)
     {       
-        rui_device_get_status(&app_device_status);//The query gets the current device status 
-        rui_lora_get_status(&app_lora_status);//The query gets the current lora status 
+        rui_lora_get_status(false,&app_lora_status);//The query gets the current lora status 
         rui_running();
         switch(app_lora_status.work_mode)
         {
             case RUI_LORAWAN:
-                if(autosendtemp_status != app_device_status.autosend_status) 
+                if(autosendtemp_status != app_lora_status.autosend_status) 
                 {
-                    autosendtemp_status = app_device_status.autosend_status;
+                    autosendtemp_status = app_lora_status.autosend_status;
                     if(autosendtemp_status == false)
                     {
-                        autosendtemp_status = app_device_status.autosend_status;
+                        autosendtemp_status = app_lora_status.autosend_status;
                         rui_lora_set_send_interval(0,0);  //stop auto send data 
                         autosend_flag=false;
                     }else
@@ -295,7 +285,7 @@ void main(void)
                 if(IsTxDone)
                 {
                     IsTxDone=false;   
-                    rui_device_sleep(1);               
+                    rui_device_sleep(1);              
                 }  
 
                 app_loop();  
