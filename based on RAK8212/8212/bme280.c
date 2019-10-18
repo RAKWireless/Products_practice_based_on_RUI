@@ -94,7 +94,8 @@ int8_t user_spi_write(uint8_t dev_id, uint8_t reg_addr, uint8_t *reg_data, uint1
 {
     int8_t rslt = 0; /* Return 0 for Success, non-zero for failure */
 
-    rslt = rui_spi_rw(&reg_addr,1,reg_data,len);
+    rslt = rui_spi_rw(&reg_addr,1,NULL,0);
+    rslt = rui_spi_rw(reg_data,len,NULL,0);    
 
     return rslt;
 }
