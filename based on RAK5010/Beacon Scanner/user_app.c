@@ -1,5 +1,8 @@
 #include "rui.h"
-
+#include "lis3dh.h"
+#include "opt3001.h"
+#include "shtc3.h"
+#include "lps22hb.h"
 
 void rui_ble_scan_adv(int8_t rssi_value, uint8_t *p_adv_data, uint16_t adv_data_len, uint8_t *p_device_mac)
 {
@@ -13,17 +16,46 @@ void rui_ble_scan_adv(int8_t rssi_value, uint8_t *p_adv_data, uint16_t adv_data_
     /* Filter ble device by broadcast data */
     if (0x00 == memcmp(filter_data, p_manu_data, 3))
     {
-        RUI_LOG_PRINTF("Target device mac is %02x-%02x-%02x-%02x-%02x-%02x \n",
+        RUI_LOG_PRINTF("Target beacon mac is %02x-%02x-%02x-%02x-%02x-%02x \n",
                         p_device_mac[5], p_device_mac[4], p_device_mac[3],
                         p_device_mac[2], p_device_mac[1], p_device_mac[0]);
     }
 }
 
+RUI_I2C_ST st = {0};
+
+void sensor_on(void)
+{
+
+    st.PIN_SDA = 14;
+    st.PIN_SCL = 13;
+    st.FREQUENCY = RUI_I2C_FREQ_400K;
+    rui_i2c_init(&st);
+
+    //lis3dh init
+    lis3dh_init();
+    //opt3001 init
+    opt3001_init();
+	//shtc3 init
+    SHTC3_Wakeup();
+    //lps22hb init 1 wake up
+    lps22hb_mode(1);
+
+}
+
+void sensor_off(void)
+{
+    lis3dh_sleep_init();
+    sensorOpt3001Enable(0);
+    SHTC3_Sleep();
+    lps22hb_mode(0);
+}
+
 void main(void)
 {
     //system init 
+    rui_sensor_register_callback(sensor_on,sensor_off);
     rui_init();
-    //you can add your init code here, like timer, uart, spi...
 
     while(1)
     {
@@ -33,4 +65,3 @@ void main(void)
         rui_running();
     }
 }
-
