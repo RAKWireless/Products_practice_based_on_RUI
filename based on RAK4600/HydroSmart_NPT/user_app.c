@@ -1,5 +1,6 @@
 #include "rui.h"
 
+
 extern RUI_I2C_ST rui_i2c_module;
 
 /**         FED-XXXD-NPT                        */
@@ -17,18 +18,18 @@ extern RUI_I2C_ST rui_i2c_module;
 void npt_get_pressure(double *pressure)
 {
     uint8_t buf[3];
-	uint32_t dat=0;
-	double fadc;
+    uint32_t dat=0;
+    double fadc;
 
     rui_i2c_rw(&rui_i2c_module, RUI_IF_READ, NPT_ADDR, NPT_PRESSURE1, buf, sizeof(buf));
 
-	dat =( buf[0]<<16 ) | (buf[1]<<8) | (buf[2]);
-	if(dat & 0x800000)
-    	fadc = dat-16777216.0;
-	else
-	    fadc = dat;
+    dat =( buf[0]<<16 ) | (buf[1]<<8) | (buf[2]);
+    if(dat & 0x800000)
+        fadc = dat-16777216.0;
+    else
+        fadc = dat;
 
-    double ADC_p ;	
+    double ADC_p ;
 
     ADC_p = 3.3 * fadc/8388608.0 ;
     *pressure =  (200 * (ADC_p-0.5)/2.0)+0;
@@ -37,18 +38,18 @@ void npt_get_pressure(double *pressure)
 void npt_get_temperature(double *temperature)
 {
     uint8_t buf[3];
-	uint32_t dat=0;
-	double fadc;
+    uint32_t dat=0;
+    double fadc;
 
     rui_i2c_rw(&rui_i2c_module, RUI_IF_READ, NPT_ADDR, NPT_TEMPERATURE1, buf, sizeof(buf));
 
-	dat =( buf[0]<<16 ) | (buf[1]<<8) | (buf[2]);
-	if(dat & 0x800000)
-    	fadc = dat-16777216.0;
-	else
-	    fadc = dat;
+    dat =( buf[0]<<16 ) | (buf[1]<<8) | (buf[2]);
+    if(dat & 0x800000)
+        fadc = dat-16777216.0;
+    else
+        fadc = dat;
 
-	*temperature= 25.0 + fadc/65536.0;
+    *temperature= 25.0 + fadc/65536.0;
 }
 
 /************************************************/
@@ -83,7 +84,6 @@ void module_running(void)
 {
     double pressure,temperature;
 
-
     if (!timer_flag)
         return ;
     timer_flag = 0;
@@ -95,9 +95,25 @@ void module_running(void)
 }
 
 
+/*  the function will run before sleep,
+    user can add code to make sensor into low power mode */
+void user_sensor_sleep(void)
+{
+    // ...
+}
+
+/*  the function will run after wake up,
+    user can add code to wake up and init sensor module. */
+void user_sensor_wakeup(void)
+{
+    // ...
+}
+
+
 void main(void)
 {
-    //system init 
+    //system init
+    rui_sensor_register_callback(user_sensor_wakeup, user_sensor_sleep);
     rui_init();
 
     //you can add your init code here, like timer, uart, spi...
@@ -107,9 +123,10 @@ void main(void)
     while(1)
     {
         //do your work here, then call rui_device_sleep(1) to sleep
-//        module_running();
+        module_running();
 
         //here run system work and do not modify
         rui_running();
     }
 }
+

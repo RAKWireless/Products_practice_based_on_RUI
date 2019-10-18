@@ -14,15 +14,15 @@ int RUI_CALLBACK_REGE_FLAG = 0;
 //lora recieve callback
 void LoRaReceive_callback(RUI_RECEIVE_T* Receive_datapackage)
 {
-    //user define 
+    //user define
 }
 
 //here will excute the period task to send data to user's server
 void app_task(void * p_context)
 {
-    uint8_t send_data[256] = {0}; 
+    uint8_t send_data[256] = {0};
 
-	RUI_LOG_PRINTF("app_task!!!");
+    RUI_LOG_PRINTF("app_task!!!");
 
     if (RUI_CALLBACK_REGE_FLAG == 0)
     {
@@ -32,9 +32,9 @@ void app_task(void * p_context)
 
     // sensors init
     rui_device_sleep(0);
-	
+
     // send test data
-	memset(send_data,0x41,50);
+    memset(send_data,0x41,50);
     rui_lora_send(1,send_data,50);
 
     // system run to sleep

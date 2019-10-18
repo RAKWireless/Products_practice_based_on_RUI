@@ -13,16 +13,33 @@ void rui_ble_scan_adv(int8_t rssi_value, uint8_t *p_adv_data, uint16_t adv_data_
     /* Filter ble device by broadcast data */
     if (0x00 == memcmp(filter_data, p_manu_data, 3))
     {
-        RUI_LOG_PRINTF("Target device mac is %02x-%02x-%02x-%02x-%02x-%02x \n",
+        RUI_LOG_PRINTF("Target beacon mac is %02x-%02x-%02x-%02x-%02x-%02x \n",
                         p_device_mac[5], p_device_mac[4], p_device_mac[3],
                         p_device_mac[2], p_device_mac[1], p_device_mac[0]);
     }
 }
 
+/*  the function will run before sleep, 
+    user can add code to make sensor into low power mode */
+void user_sensor_sleep(void)
+{
+    // ...
+}
+
+/*  the function will run after wake up, 
+    user can add code to wake up and init sensor module. */
+void user_sensor_wakeup(void)
+{
+    // ...
+}
+
+
 void main(void)
 {
     //system init 
+    rui_sensor_register_callback(user_sensor_wakeup, user_sensor_sleep);
     rui_init();
+    
     //you can add your init code here, like timer, uart, spi...
 
     while(1)

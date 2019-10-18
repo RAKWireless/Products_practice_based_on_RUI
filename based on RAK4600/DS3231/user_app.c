@@ -2,7 +2,6 @@
 #include "ds3231.h"
 
 
-
 RUI_TIMER_ST rui_timer;
 uint8_t timer_flag=0;
 void timer_callback(void)
@@ -41,9 +40,25 @@ void i2c_running(void)
 }
 
 
+/*  the function will run before sleep, 
+    user can add code to make sensor into low power mode */
+void user_sensor_sleep(void)
+{
+    // ...
+}
+
+/*  the function will run after wake up, 
+    user can add code to wake up and init sensor module. */
+void user_sensor_wakeup(void)
+{
+    // ...
+}
+
+
 void main(void)
 {
     //system init 
+    rui_sensor_register_callback(user_sensor_wakeup, user_sensor_sleep);
     rui_init();
 
     //you can add your init code here, like timer, uart, spi...
@@ -59,3 +74,4 @@ void main(void)
         rui_running();
     }
 }
+
