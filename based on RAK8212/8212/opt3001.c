@@ -45,11 +45,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-#include "nrf_drv_twi.h"
-#include "nrf_gpio.h"
-#include "nrf_delay.h"
-#include "app_util_platform.h"
-#include "board_basic.h"
 #include "rui.h"
 #include "opt3001.h"
 #include "math.h"
@@ -243,7 +238,7 @@ int sensorOpt3001Read(uint16_t *rawData)
 {
     int success;
     uint16_t val;
-
+    uint8_t cmd = 0x00;
     success = sensorReadReg(REG_CONFIGURATION, (uint8_t *)&val, REGISTER_LENGTH);
 
     if (success)
@@ -251,7 +246,7 @@ int sensorOpt3001Read(uint16_t *rawData)
 
     if (success)
     {
-        success = sensorWriteReg(REG_RESULT, 0x00, 1);
+        success = sensorWriteReg(REG_RESULT, &cmd, 1);
         success = sensorReadReg(REG_RESULT, (uint8_t*)&val, DATA_LENGTH);
     }
 
