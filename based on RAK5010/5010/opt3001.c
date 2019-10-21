@@ -74,12 +74,15 @@ uint32_t opt3001_twi_init(void)
  **************************************************************************************************/
 bool sensorReadReg(uint8_t addr, uint8_t *pBuf, uint8_t nBytes)
 {
-    if(rui_i2c_rw(&st,RUI_IF_READ,OPT3001_ADDR,addr,pBuf,nBytes) == NRF_SUCCESS)
+    st.REG_NULL == I2C_REG_MAGIC;
+    if(rui_i2c_rw(&opt3001_st,RUI_IF_READ,OPT3001_ADDR,addr,pBuf,nBytes) == NRF_SUCCESS)
     {
+        st.REG_NULL == 0;
         return true;
     }
     else
     {
+        st.REG_NULL == 0;
         return false;
     }
 }
@@ -97,12 +100,15 @@ bool sensorReadReg(uint8_t addr, uint8_t *pBuf, uint8_t nBytes)
 */
 bool sensorWriteReg(uint8_t addr, uint8_t *pBuf, uint8_t nBytes)
 {
-    if(rui_i2c_rw(&st,RUI_IF_WRITE,OPT3001_ADDR,addr,pBuf,nBytes) == NRF_SUCCESS)
+    st.REG_NULL == I2C_REG_MAGIC;
+    if(rui_i2c_rw(&opt3001_st,RUI_IF_WRITE,OPT3001_ADDR,addr,pBuf,nBytes) == NRF_SUCCESS)
     {
+        st.REG_NULL == 0;
         return true;
     }
     else
-    {
+    {   
+        st.REG_NULL == 0;
         return false;
     }
 }
@@ -242,7 +248,7 @@ int sensorOpt3001Read(uint16_t *rawData)
 
     if (success)
     {
-        success = sensorWriteReg(REG_RESULT, &cmd, 1);
+        //success = sensorWriteReg(REG_RESULT, &cmd, 1);
         success = sensorReadReg(REG_RESULT, (uint8_t*)&val, DATA_LENGTH);
     }
 
