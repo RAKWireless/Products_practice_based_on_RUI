@@ -3,6 +3,7 @@
 #include "at_cmd.h"
 #include "lora_config.h"
 #include "rui.h"
+#include "bsp.h"
 
 
 #define MAX_ARGV        10
@@ -13,6 +14,7 @@ static uint32_t handle_device_config(lora_config_t *config, int argc, char *argv
 static uint32_t handle_lora_config(lora_config_t *config, int argc, char *argv[], char *in);
 static uint32_t handle_lorap2p_config(RUI_LORA_STATUS_T *config, int argc, char *argv[], char *in);
 static uint32_t handle_device_status(void);
+static uint32_t user_set_gps_timeout(uint32_t gpstimeout);
 struct board_config_cmd
 {
     char *name;
@@ -443,6 +445,10 @@ static uint32_t handle_device_config(lora_config_t *config, int argc, char *argv
             break;
         case status:handle_device_status();
             break;
+        case gps_timeout:
+            if(argc == 2)user_set_gps_timeout(atoi(argv[1]));
+            else return -1;
+            break;
         default :RUI_LOG_PRINTF("Parameter is invalid.\r\n");return -1;
             break;
     }
@@ -656,8 +662,8 @@ static uint32_t  handle_lorap2p_config(RUI_LORA_STATUS_T *config, int argc, char
 }
 
 
-#include "inv_mpu.h"
-
+extern bsp_sensor_data_t bsp_sensor;
+extern TimerEvent_t Gps_Cnt_Timer;  //search satellite timer
 static uint32_t handle_device_status(void)
 {
     RUI_LOG_PRINTF("OK.\r\n*************************************************\r\n===============Device Status List================\r\n"); 
@@ -665,9 +671,36 @@ static uint32_t handle_device_status(void)
     RUI_LOG_PRINTF("Board Core:  RAK811\r\n");
     RUI_LOG_PRINTF("MCU:  STM32L151CB_A\r\n");   
     RUI_LOG_PRINTF("LoRa chip:  SX1276\r\n"); 
-    RUI_LOG_PRINTF("\r\n");     
+    RUI_LOG_PRINTF("\r\n");   
+
+    RUI_LOG_PRINTF("Battery Voltage:%d.%d V \r\n",(uint32_t)(bsp_sensor.voltage), (uint32_t)((bsp_sensor.voltage)*1000-((int32_t)(bsp_sensor.voltage)) * 1000));
+    
+    RUI_LOG_PRINTF("GPS data:");
+    RUI_LOG_PRINTF("  latitude: %d.%d, longitude: %d.%d , altitude: %d.%dm \r\n",
+						(int32_t)bsp_sensor.latitude,abs((int32_t)(bsp_sensor.latitude*1000000-((int32_t)bsp_sensor.latitude) * 1000000)),
+						(int32_t)bsp_sensor.longitude,abs((int32_t)(bsp_sensor.longitude*1000000-((int32_t)bsp_sensor.longitude) * 1000000)),    
+						bsp_sensor.altitude/10,abs(bsp_sensor.altitude%10));
+
+    RUI_LOG_PRINTF("LIS3DH sensor data:");
+    RUI_LOG_PRINTF("  LIS3DH X,Y,Z: %dmg, %dmg, %dmg\r\n",(int32_t)bsp_sensor.triaxial_x , (int32_t)bsp_sensor.triaxial_y , (int32_t)bsp_sensor.triaxial_z );
+
+    RUI_LOG_PRINTF("BME680 sensor data:\r\n");
+    RUI_LOG_PRINTF("  Humidity:%d.%d %%RH\r\n",(int32_t)(bsp_sensor.humidity/1000),(int32_t)(bsp_sensor.humidity%1000));		
+    RUI_LOG_PRINTF("  Temperature:%d.%d degree\r\n",(int32_t)(bsp_sensor.temperature/100),(int32_t)(bsp_sensor.temperature%100));	
+    RUI_LOG_PRINTF("  Pressure:%d.%d hPa\r\n",(int32_t)(bsp_sensor.pressure/100),(int32_t)(bsp_sensor.pressure%100));	
+    RUI_LOG_PRINTF("  Gas_resistance: %d ohms \r\n", bsp_sensor.resis);	
 
     RUI_LOG_PRINTF("===================List End======================\r\n"); 
     RUI_LOG_PRINTF("*************************************************\r\n");       
+}
+
+extern user_store_data_t user_store_data;
+uint32_t user_set_gps_timeout(uint32_t gpstimeout)
+{
+    user_store_data.gps_timeout_cnt = gpstimeout;
+    rui_timer_stop(&Gps_Cnt_Timer); 
+    rui_timer_setvalue( &Gps_Cnt_Timer, user_store_data.gps_timeout_cnt * 1000 );
+    rui_timer_start(&Gps_Cnt_Timer); //restart search satellite timer
+    rui_flash_write(RUI_FLASH_USER,&user_store_data.gps_timeout_cnt,2);
 }
 

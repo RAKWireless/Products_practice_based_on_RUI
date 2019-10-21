@@ -61,7 +61,7 @@ void GpsPpsHandler( bool *parseData )
     }
 }
 #define GPS_POWER_EN                            14
-uint16_t gps_timeout_cnt=0;  //record gps search satellite timer 
+extern user_store_data_t user_store_data;
 void GpsInit( void )
 {
     PpsDetected = false;
@@ -75,15 +75,15 @@ void GpsInit( void )
 
     GpsStart();
     
-    rui_flash_read(RUI_FLASH_USER,&gps_timeout_cnt,2);  //read gps search satellite timer from flash
+    rui_flash_read(RUI_FLASH_USER,&user_store_data.gps_timeout_cnt,2);  //read gps search satellite timer from flash
 
-    if(gps_timeout_cnt == 0)
+    if(user_store_data.gps_timeout_cnt == 0)
     {
-        gps_timeout_cnt = 100;  //set default gps search satellite timer:100s
-        rui_flash_write(RUI_FLASH_USER,&gps_timeout_cnt,2);
+        user_store_data.gps_timeout_cnt = 100;  //set default gps search satellite timer:100s
+        rui_flash_write(RUI_FLASH_USER,&user_store_data.gps_timeout_cnt,2);
     }
 
-    RUI_LOG_PRINTF("GPS Init OK.GPS timeout:%ds\r\n",gps_timeout_cnt);
+    RUI_LOG_PRINTF("GPS Init OK.GPS timeout:%ds\r\n",user_store_data.gps_timeout_cnt);
 
 }
 

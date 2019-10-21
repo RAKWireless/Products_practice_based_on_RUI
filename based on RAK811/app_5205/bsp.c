@@ -1,6 +1,8 @@
-#include "board.h"
 #include "rui.h"
+#include "bsp.h"
 
+bsp_sensor_data_t bsp_sensor;
+user_store_data_t user_store_data;
 /********************************************************************************************************
  * get Battery Volage
 ********************************************************************************************************/
@@ -47,7 +49,6 @@ extern bool HasFix;
 extern RUI_LORA_STATUS_T app_lora_status; //record lora status 
 RUI_GPIO_ST Gps_Power_Ctl;
 bool gps_timeout_flag = false;  //If satellite detected fail,this flag will be true
-extern uint16_t gps_timeout_cnt;
 TimerEvent_t Gps_Cnt_Timer;  //search satellite timer
 #define GPS_SAMPLE_CNT 10
 GPS_DATA_T gps_data[GPS_SAMPLE_CNT];
@@ -83,8 +84,8 @@ int GPS_get_data(double* latitude,double* longitude,int16_t* altitude)
 	gps_timeout_flag = false;
 	GpsStart();																		
 	rui_timer_init( &Gps_Cnt_Timer, Gps_Timeout_Event ); 
-	rui_timer_setvalue( &Gps_Cnt_Timer, gps_timeout_cnt * 1000 );  
-	RUI_LOG_PRINTF("Start Search Satellite(about %d seconds) ...\r\n",gps_timeout_cnt);
+	rui_timer_setvalue( &Gps_Cnt_Timer, user_store_data.gps_timeout_cnt * 1000 );  
+	RUI_LOG_PRINTF("Start Search Satellite(about %d seconds) ...\r\n",user_store_data.gps_timeout_cnt);
 	rui_timer_start(&Gps_Cnt_Timer); //start search satellite timer
 
 	while((gps_timeout_flag == false) && !HasFix)
@@ -151,12 +152,12 @@ int lis3dh_get_data(float* lis_X,float* lis_Y,float* lis_Z)
 		*lis_X = lis3dh_from_fs2_hr_to_mg(data_raw_acceleration.i16bit[0]);
 		*lis_Y = lis3dh_from_fs2_hr_to_mg(data_raw_acceleration.i16bit[1]);
 		*lis_Z = lis3dh_from_fs2_hr_to_mg(data_raw_acceleration.i16bit[2]);
-		RUI_LOG_PRINTF("\r\nLSI3DH X,Y,Z: %dmg, %dmg, %dmg\r\n",(int32_t)*lis_X , (int32_t)*lis_Y , (int32_t)*lis_Z );
+		RUI_LOG_PRINTF("\r\nLIS3DH X,Y,Z: %dmg, %dmg, %dmg\r\n",(int32_t)*lis_X , (int32_t)*lis_Y , (int32_t)*lis_Z );
 
 		return 0;
     }else
 	{
-		RUI_LOG_PRINTF("LSI3DH Error.\r\n");
+		RUI_LOG_PRINTF("LIS3DH Error.\r\n");
 		return -1;
 	}
 }

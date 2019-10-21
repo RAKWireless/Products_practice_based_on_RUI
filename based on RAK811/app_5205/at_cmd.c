@@ -419,7 +419,13 @@ static void atcmd_help(int argc, char *argv[])
 
     RUI_LOG_PRINTF("LoRaP2P AT commands:\r\n");
     RUI_LOG_PRINTF("  at+set_config=lorap2p:XXX:Y:Z:A:B:C\r\n");
-    RUI_LOG_PRINTF("  at+send=lorap2p:XXX\r\n");    
+    RUI_LOG_PRINTF("  at+send=lorap2p:XXX\r\n");  
+    RUI_LOG_PRINTF("\r\n");
+
+    RUI_LOG_PRINTF("Sensor AT commands:\r\n"); 
+    RUI_LOG_PRINTF("  at+set_config=device:gps_timeout:X\r\n");
+
+
     RUI_LOG_PRINTF("===================List End======================\r\n");
     RUI_LOG_PRINTF("*************************************************\r\n"); 
 }

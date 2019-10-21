@@ -117,20 +117,11 @@ void bsp_init(void)
     GpsInit();	
 }
 
+extern bsp_sensor_data_t bsp_sensor;
 void app_loop(void)
 {
-    float temp_f=0.0;
-    float x_f,y_f,z_f;
-    int temp=0;
-    uint32_t humidity;
-    int16_t temperature;
-    uint32_t pressure;  
-    uint32_t  resis;   
+    int temp=0;  
     int x,y,z;
-    double latitude;
-    double longitude;
-    int16_t altitude;
-
     static uint8_t i=0;
     rui_lora_get_status(false,&app_lora_status);
     if(app_lora_status.IsJoined)
@@ -139,55 +130,55 @@ void app_loop(void)
         {
             rui_delay_ms(50);
 
-            if(GPS_get_data(&latitude,&longitude,&altitude) == 0)
+            if(GPS_get_data(&bsp_sensor.latitude,&bsp_sensor.longitude,&bsp_sensor.altitude) == 0)
             {
                 a[i++]=0x01;  //11bytes
                 a[i++]=0x88;
-                a[i++]=((int32_t) (latitude * 10000) >> 16) & 0xFF;
-                a[i++]=((int32_t) (latitude * 10000) >> 8) & 0xFF;
-                a[i++]=((int32_t) (latitude * 10000)) & 0xFF;
-                a[i++]=((int32_t) (longitude * 10000) >> 16) & 0xFF;
-                a[i++]=((int32_t) (longitude * 10000) >> 8) & 0xFF;
-                a[i++]=((int32_t) (longitude * 10000)) & 0xFF;
-                a[i++]=((int32_t)(altitude* 10) >> 16) & 0xFF;
-                a[i++]=((int32_t)(altitude* 10) >> 8) & 0xFF;
-                a[i++]=((int32_t)(altitude* 10)) & 0xFF;
+                a[i++]=((int32_t) (bsp_sensor.latitude * 10000) >> 16) & 0xFF;
+                a[i++]=((int32_t) (bsp_sensor.latitude * 10000) >> 8) & 0xFF;
+                a[i++]=((int32_t) (bsp_sensor.latitude * 10000)) & 0xFF;
+                a[i++]=((int32_t) (bsp_sensor.longitude * 10000) >> 16) & 0xFF;
+                a[i++]=((int32_t) (bsp_sensor.longitude * 10000) >> 8) & 0xFF;
+                a[i++]=((int32_t) (bsp_sensor.longitude * 10000)) & 0xFF;
+                a[i++]=((int32_t)(bsp_sensor.altitude* 10) >> 16) & 0xFF;
+                a[i++]=((int32_t)(bsp_sensor.altitude* 10) >> 8) & 0xFF;
+                a[i++]=((int32_t)(bsp_sensor.altitude* 10)) & 0xFF;
             }
 
-            BoardBatteryMeasureVolage(&temp_f);
-            temp_f=temp_f/1000.0;   //convert mV to V
-            RUI_LOG_PRINTF("Battery Voltage = %d.%d V \r\n",(uint32_t)(temp_f), (uint32_t)((temp_f)*1000-((int32_t)(temp_f)) * 1000));
-            temp=(uint16_t)round(temp_f*100.0);
+            BoardBatteryMeasureVolage(&bsp_sensor.voltage);
+            bsp_sensor.voltage=bsp_sensor.voltage/1000.0;   //convert mV to V
+            RUI_LOG_PRINTF("Battery Voltage = %d.%d V \r\n",(uint32_t)(bsp_sensor.voltage), (uint32_t)((bsp_sensor.voltage)*1000-((int32_t)(bsp_sensor.voltage)) * 1000));
+            temp=(uint16_t)round(bsp_sensor.voltage*100.0);
             a[i++]=0x08;
             a[i++]=0x02;
             a[i++]=(temp&0xffff) >> 8;
             a[i++]=temp&0xff;				
 
-            if(BME680_get_data(&humidity,&temperature,&pressure,&resis)==0)
+            if(BME680_get_data(&bsp_sensor.humidity,&bsp_sensor.temperature,&bsp_sensor.pressure,&bsp_sensor.resis)==0)
             {
                 a[i++]=0x07;
                 a[i++]=0x68;
-                a[i++]=( humidity / 500 ) & 0xFF;
+                a[i++]=( bsp_sensor.humidity / 500 ) & 0xFF;
 					
                 a[i++]=0x06;
                 a[i++]=0x73;
-                a[i++]=(( pressure / 10 ) >> 8 ) & 0xFF;
-                a[i++]=(pressure / 10 ) & 0xFF;
+                a[i++]=(( bsp_sensor.pressure / 10 ) >> 8 ) & 0xFF;
+                a[i++]=(bsp_sensor.pressure / 10 ) & 0xFF;
 			
                 a[i++]=0x02;
                 a[i++]=0x67;
-                a[i++]=(( temperature / 10 ) >> 8 ) & 0xFF;
-                a[i++]=(temperature / 10 ) & 0xFF;
+                a[i++]=(( bsp_sensor.temperature / 10 ) >> 8 ) & 0xFF;
+                a[i++]=(bsp_sensor.temperature / 10 ) & 0xFF;
 
                 a[i++] = 0x04;
 				a[i++] = 0x02; //analog output
-				a[i++] = (((int32_t)(resis / 10)) >> 8) & 0xFF;
-				a[i++] = ((int32_t)(resis / 10 )) & 0xFF;
+				a[i++] = (((int32_t)(bsp_sensor.resis / 10)) >> 8) & 0xFF;
+				a[i++] = ((int32_t)(bsp_sensor.resis / 10 )) & 0xFF;
             }
 
-            if(lis3dh_get_data(&x_f,&y_f,&z_f) == 0)
+            if(lis3dh_get_data(&bsp_sensor.triaxial_x,&bsp_sensor.triaxial_y,&bsp_sensor.triaxial_z) == 0)
             {
-                x=(int)(x_f);y=(int)(y_f);z=(int)(z_f);
+                x=(int)(bsp_sensor.triaxial_x);y=(int)(bsp_sensor.triaxial_y);z=(int)(bsp_sensor.triaxial_z);
                 a[i++]=0x03;
                 a[i++]=0x71;
                 a[i++]=(x>>8) & 0xff;
@@ -401,7 +392,7 @@ void main(void)
  *The query gets the current device and lora status 
  * 
  * *****************************************************************************************/    
-    rui_lora_get_status(false,&app_lora_status);;
+    rui_lora_get_status(false,&app_lora_status);
     autosendtemp_status = app_lora_status.autosend_status;
 
 	RUI_LOG_PRINTF("autosend_interval: %us\r\n", app_lora_status.lorasend_interval);
@@ -473,7 +464,7 @@ void main(void)
                 {                      
                     GpsStop();  //close gps before entry sleep mode
                     rui_device_sleep(1); 
-                    IsTxDone=false; //清除睡眠标志                                    
+                    IsTxDone=false; //Clear sleep flag                                  
                 }  
 
                 app_loop();    
