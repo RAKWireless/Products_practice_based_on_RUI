@@ -57,14 +57,14 @@ uint32_t SHTC3_GetTempAndHumi(float *temp, float *humi){
 
   uint16_t rawValueTemp = 0; // temperature raw value from sensor
   uint16_t rawValueHumi = 0; // humidity raw value from sensor
-
+  st.REG_NULL = I2C_REG_MAGIC;
   // measure, read temperature first, clock streching enabled, read temprature first.
 
   uint8_t tx[2] = {0x7C, 0xA2};
   rui_i2c_rw(&st,RUI_IF_WRITE,_Address,0,tx,2);
   uint8_t rx[6] = {0};
   rui_i2c_rw(&st,RUI_IF_READ,_Address,0,rx,6);
-
+  st.REG_NULL = 0;
   rawValueTemp = rx[1] | (rx[0] << 8);
   //rawValueTemp = (100 * rawValueTemp * 175) / 65535 - 45 * 100;
   rawValueHumi = rx[4] | (rx[3] << 8);
@@ -77,32 +77,40 @@ uint32_t SHTC3_GetTempAndHumi(float *temp, float *humi){
 //------------------------------------------------------------------------------
 uint32_t SHTC3_GetId(uint16_t *id){
 
+    st.REG_NULL = I2C_REG_MAGIC;
     uint8_t tx[2] = {0xEF, 0xC8};
     rui_i2c_rw(&st,RUI_IF_WRITE,_Address,0,tx,2);
 
     int8_t rx[3] = {0};
     rui_i2c_rw(&st,RUI_IF_READ,_Address,0,rx,3);
     *id = (rx[0] << 8) | rx[1];
+    st.REG_NULL = 0;
 }
 
 //------------------------------------------------------------------------------
 uint32_t SHTC3_Sleep(void) {
+    st.REG_NULL = I2C_REG_MAGIC;
     uint8_t tx[2] = {0xB0, 0x98};
     rui_i2c_rw(&st,RUI_IF_WRITE,_Address,0,tx,2);
+    st.REG_NULL = 0;
 }
 
 //------------------------------------------------------------------------------
 uint32_t SHTC3_Wakeup(void) {
+    st.REG_NULL = I2C_REG_MAGIC;
     uint16_t id = 0;
     uint8_t tx[2] = {0x35, 0x17};
     rui_i2c_rw(&st,RUI_IF_WRITE,_Address,0,tx,2);
     delay_ms(500);
     SHTC3_GetId(&id);
     RUI_LOG_PRINTF("shtc3 id = %d",id);
+    st.REG_NULL = 0;
 }
 
 //------------------------------------------------------------------------------
 uint32_t SHTC3_SoftReset(void){
+    st.REG_NULL = I2C_REG_MAGIC;
     uint8_t tx[2] = {0x80, 0x5D};
     rui_i2c_rw(&st,RUI_IF_WRITE,_Address,0,tx,2);
+    st.REG_NULL = 0;
 }
