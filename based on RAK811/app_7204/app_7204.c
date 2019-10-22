@@ -1,5 +1,6 @@
 #include "rui.h"
 #include "board.h"
+#include "sensor.h"
 
 //join cnt
 #define JOIN_MAX_CNT 6
@@ -62,6 +63,7 @@ void OnLed_Blue_TimerEvent(void)
     {
         IsTxDone=true;  //Sleep flag set true
     }
+    rui_delay_ms(5);
 }
 void bsp_led_init(void)
 {
@@ -112,16 +114,11 @@ void bsp_init(void)
     BME680_Init();
 }
 
+extern bsp_sensor_data_t bsp_sensor;
 void app_loop(void)
 {
-    float temp_f=0;
-    uint32_t humidity;
-    int16_t temperature;
-    uint32_t pressure;
-	uint32_t  resis;
-    int temp=0; 
+    int temp=0;  
     int x,y,z;
-    float x0,y0,z0;
     static uint8_t i=0;
     rui_lora_get_status(false,&app_lora_status);
     if(app_lora_status.IsJoined)
@@ -129,35 +126,36 @@ void app_loop(void)
         if (autosend_flag) 
         {
             rui_delay_ms(50);
-            BoardBatteryMeasureVolage(&temp_f);
-            temp_f=temp_f/1000.0;   //convert mV to V
-            RUI_LOG_PRINTF("Battery Voltage = %d.%d V \r\n",(uint32_t)(temp_f), (uint32_t)((temp_f)*1000-((int32_t)(temp_f)) * 1000));
-            temp=(uint16_t)round(temp_f*100.0);
+
+            BoardBatteryMeasureVolage(&bsp_sensor.voltage);
+            bsp_sensor.voltage=bsp_sensor.voltage/1000.0;   //convert mV to V
+            RUI_LOG_PRINTF("Battery Voltage = %d.%d V \r\n",(uint32_t)(bsp_sensor.voltage), (uint32_t)((bsp_sensor.voltage)*1000-((int32_t)(bsp_sensor.voltage)) * 1000));
+            temp=(uint16_t)round(bsp_sensor.voltage*100.0);
             a[i++]=0x08;
             a[i++]=0x02;
             a[i++]=(temp&0xffff) >> 8;
             a[i++]=temp&0xff;				
 
-            if(BME680_get_data(&humidity,&temperature,&pressure,&resis)==0)
+            if(BME680_get_data(&bsp_sensor.humidity,&bsp_sensor.temperature,&bsp_sensor.pressure,&bsp_sensor.resis)==0)
             {
                 a[i++]=0x07;
                 a[i++]=0x68;
-                a[i++]=( humidity / 500 ) & 0xFF;
+                a[i++]=( bsp_sensor.humidity / 500 ) & 0xFF;
 					
                 a[i++]=0x06;
                 a[i++]=0x73;
-                a[i++]=(( pressure / 10 ) >> 8 ) & 0xFF;
-                a[i++]=(pressure / 10 ) & 0xFF;
+                a[i++]=(( bsp_sensor.pressure / 10 ) >> 8 ) & 0xFF;
+                a[i++]=(bsp_sensor.pressure / 10 ) & 0xFF;
 			
                 a[i++]=0x02;
                 a[i++]=0x67;
-                a[i++]=(( temperature / 10 ) >> 8 ) & 0xFF;
-                a[i++]=(temperature / 10 ) & 0xFF;
+                a[i++]=(( bsp_sensor.temperature / 10 ) >> 8 ) & 0xFF;
+                a[i++]=(bsp_sensor.temperature / 10 ) & 0xFF;
 
                 a[i++] = 0x04;
 				a[i++] = 0x02; //analog output
-				a[i++] = (((int32_t)(resis / 10)) >> 8) & 0xFF;
-				a[i++] = ((int32_t)(resis / 10 )) & 0xFF;
+				a[i++] = (((int32_t)(bsp_sensor.resis / 10)) >> 8) & 0xFF;
+				a[i++] = ((int32_t)(bsp_sensor.resis / 10 )) & 0xFF;
             }
 
 
@@ -348,7 +346,7 @@ void main(void)
  *The query gets the current device and lora status 
  * 
  * *****************************************************************************************/    
-    rui_lora_get_status(false,&app_lora_status);;
+    rui_lora_get_status(false,&app_lora_status);
     autosendtemp_status = app_lora_status.autosend_status;
 
 	RUI_LOG_PRINTF("autosend_interval: %us\r\n", app_lora_status.lorasend_interval);
@@ -419,7 +417,7 @@ void main(void)
                 if(IsTxDone)
                 {                  
                     rui_device_sleep(1);  
-					IsTxDone=false;  //���˯�߱�־                
+                    IsTxDone=false; //Clear sleep flag                                  
                 }  
 
                 app_loop();    

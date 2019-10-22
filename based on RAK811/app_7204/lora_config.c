@@ -3,6 +3,7 @@
 #include "at_cmd.h"
 #include "lora_config.h"
 #include "rui.h"
+#include "sensor.h"
 
 
 #define MAX_ARGV        10
@@ -653,6 +654,9 @@ static uint32_t  handle_lorap2p_config(RUI_LORA_STATUS_T *config, int argc, char
     else return -1;
 }
 
+
+extern bsp_sensor_data_t bsp_sensor;
+extern TimerEvent_t Gps_Cnt_Timer;  //search satellite timer
 static uint32_t handle_device_status(void)
 {
     RUI_LOG_PRINTF("OK.\r\n*************************************************\r\n===============Device Status List================\r\n"); 
@@ -660,9 +664,17 @@ static uint32_t handle_device_status(void)
     RUI_LOG_PRINTF("Board Core:  RAK811\r\n");
     RUI_LOG_PRINTF("MCU:  STM32L151CB_A\r\n");   
     RUI_LOG_PRINTF("LoRa chip:  SX1276\r\n"); 
-    RUI_LOG_PRINTF("\r\n");    
+    RUI_LOG_PRINTF("\r\n");   
+
+    RUI_LOG_PRINTF("Battery Voltage:%d.%d V \r\n",(uint32_t)(bsp_sensor.voltage), (uint32_t)((bsp_sensor.voltage)*1000-((int32_t)(bsp_sensor.voltage)) * 1000));
+
+    RUI_LOG_PRINTF("BME680 sensor data:\r\n");
+    RUI_LOG_PRINTF("  Humidity:%d.%d %%RH\r\n",(int32_t)(bsp_sensor.humidity/1000),(int32_t)(bsp_sensor.humidity%1000));		
+    RUI_LOG_PRINTF("  Temperature:%d.%d degree\r\n",(int32_t)(bsp_sensor.temperature/100),(int32_t)(bsp_sensor.temperature%100));	
+    RUI_LOG_PRINTF("  Pressure:%d.%d hPa\r\n",(int32_t)(bsp_sensor.pressure/100),(int32_t)(bsp_sensor.pressure%100));	
+    RUI_LOG_PRINTF("  Gas_resistance: %d ohms \r\n", bsp_sensor.resis);	
 
     RUI_LOG_PRINTF("===================List End======================\r\n"); 
     RUI_LOG_PRINTF("*************************************************\r\n");       
-}
+}     
 

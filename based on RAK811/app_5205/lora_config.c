@@ -664,6 +664,7 @@ static uint32_t  handle_lorap2p_config(RUI_LORA_STATUS_T *config, int argc, char
 
 extern bsp_sensor_data_t bsp_sensor;
 extern TimerEvent_t Gps_Cnt_Timer;  //search satellite timer
+extern user_store_data_t user_store_data;
 static uint32_t handle_device_status(void)
 {
     RUI_LOG_PRINTF("OK.\r\n*************************************************\r\n===============Device Status List================\r\n"); 
@@ -675,6 +676,7 @@ static uint32_t handle_device_status(void)
 
     RUI_LOG_PRINTF("Battery Voltage:%d.%d V \r\n",(uint32_t)(bsp_sensor.voltage), (uint32_t)((bsp_sensor.voltage)*1000-((int32_t)(bsp_sensor.voltage)) * 1000));
     
+    RUI_LOG_PRINTF("gps_timeout: %d\r\n",user_store_data.gps_timeout_cnt);
     RUI_LOG_PRINTF("GPS data:");
     RUI_LOG_PRINTF("  latitude: %d.%d, longitude: %d.%d , altitude: %d.%dm \r\n",
 						(int32_t)bsp_sensor.latitude,abs((int32_t)(bsp_sensor.latitude*1000000-((int32_t)bsp_sensor.latitude) * 1000000)),
@@ -694,7 +696,6 @@ static uint32_t handle_device_status(void)
     RUI_LOG_PRINTF("*************************************************\r\n");       
 }
 
-extern user_store_data_t user_store_data;
 uint32_t user_set_gps_timeout(uint32_t gpstimeout)
 {
     user_store_data.gps_timeout_cnt = gpstimeout;
