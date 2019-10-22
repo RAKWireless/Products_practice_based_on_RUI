@@ -54,9 +54,13 @@
 */
 #define OPT3001_ADDR          0x44
 
-extern RUI_I2C_ST st;
+RUI_I2C_ST opt3001_st = {0};
 uint32_t opt3001_twi_init(void)
 {
+    opt3001_st.PIN_SDA = 26;
+    opt3001_st.PIN_SCL = 23;
+    opt3001_st.FREQUENCY = RUI_I2C_FREQ_400K;
+    rui_i2c_init(&opt3001_st);
     return NRF_SUCCESS;
 }
 
@@ -74,7 +78,8 @@ uint32_t opt3001_twi_init(void)
  **************************************************************************************************/
 bool sensorReadReg(uint8_t addr, uint8_t *pBuf, uint8_t nBytes)
 {
-    if(rui_i2c_rw(&st,RUI_IF_READ,OPT3001_ADDR,addr,pBuf,nBytes) == NRF_SUCCESS)
+
+    if(rui_i2c_rw(&opt3001_st,RUI_IF_READ,OPT3001_ADDR,addr,pBuf,nBytes) == NRF_SUCCESS)
     {
 
         return true;
@@ -99,14 +104,14 @@ bool sensorReadReg(uint8_t addr, uint8_t *pBuf, uint8_t nBytes)
 */
 bool sensorWriteReg(uint8_t addr, uint8_t *pBuf, uint8_t nBytes)
 {
-    if(rui_i2c_rw(&st,RUI_IF_WRITE,OPT3001_ADDR,addr,pBuf,nBytes) == NRF_SUCCESS)
+
+    if(rui_i2c_rw(&opt3001_st,RUI_IF_WRITE,OPT3001_ADDR,addr,pBuf,nBytes) == NRF_SUCCESS)
     {
 
         return true;
     }
     else
-    {   
-
+    {
         return false;
     }
 }
@@ -148,7 +153,7 @@ int get_opt3001_data(float *light_data)
 
 void opt3001_deinit()
 {
-   
+    
 }
 
 /* Register addresses */
