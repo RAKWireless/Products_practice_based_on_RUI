@@ -97,7 +97,7 @@ void at_parse(char *cmd)
     }
 
     // at+version
-    if(strstr(cmd,"version")!= 0)
+    if(strstr(cmd,"at+version")!= 0)
     {
         char ver[48]="Firmware Version: RUI v";
         strcat(ver, RUI_VERSION);
@@ -106,8 +106,8 @@ void at_parse(char *cmd)
         return;
     }
 
-    // at+device:sleep:1
-    if(strstr(cmd,"device:sleep:1")!= 0)
+    // at+set_config=device:sleep:1
+    if(strstr(cmd,"at+set_config=device:sleep:1")!= 0)
     {
         RUI_LOG_PRINTF("Device wil go to sleep.");
         rui_at_response(true, "Device will go to sleep.", RAK_OK);
@@ -120,8 +120,8 @@ void at_parse(char *cmd)
         return;
     }
 
-    // at+device:sleep:0
-    if(strstr(cmd,"device:sleep:0")!= 0)
+    // at+set_config=device:sleep:0
+    if(strstr(cmd,"at+set_config=device:sleep:0")!= 0)
     {
         rui_device_sleep(0);
         power_flag = 0;
@@ -129,8 +129,8 @@ void at_parse(char *cmd)
         return;
     }
 
-    // device:restart
-    if(strstr(cmd,"device:restart")!= NULL)
+    // at+set_config=device:restart
+    if(strstr(cmd,"at+set_config=device:restart")!= NULL)
     {
         uint8_t msg[64];
 
@@ -153,16 +153,16 @@ void at_parse(char *cmd)
         return;
     }
 
-    // at+device:status
-    if(strstr(cmd,"device:status")!= NULL)
+    // at+get_config=device:status
+    if(strstr(cmd,"at+get_config=device:status")!= NULL)
     {
         memset(send_data,0,256);
         rui_at_response(true, send_data, RAK_OK);
         return;
     }
 
-    //at+set_config=lora:dev_eui:XXXX
-    if(strstr(cmd,"lora:dev_eui")!= NULL)
+    // at+set_config=lora:dev_eui:XXXX
+    if(strstr(cmd,"at+set_config=lora:dev_eui")!= NULL)
     {
         uint8_t dev_eui[8];
         ptr = NULL;
@@ -189,8 +189,8 @@ void at_parse(char *cmd)
         return;
     }
 
-    //at+set_config=lora:app_eui:XXXX
-    if(strstr(cmd,"lora:app_eui")!= NULL)
+    // at+set_config=lora:app_eui:XXXX
+    if(strstr(cmd,"at+set_config=lora:app_eui")!= NULL)
     {
         uint8_t app_eui[8];
         ptr = NULL;
@@ -217,8 +217,8 @@ void at_parse(char *cmd)
         return;
     }
 
-    //at+set_config=lora:app_key:XXXX
-    if(strstr(cmd,"lora:app_key")!= NULL)
+    // at+set_config=lora:app_key:XXXX
+    if(strstr(cmd,"at+set_config=lora:app_key")!= NULL)
     {
         uint8_t app_key[16];
         ptr = NULL;
@@ -245,8 +245,8 @@ void at_parse(char *cmd)
         return;
     }
 
-    //at+set_config=lora:dev_addr:XXXX
-    if(strstr(cmd,"lora:dev_addr")!= NULL)
+    // at+set_config=lora:dev_addr:XXXX
+    if(strstr(cmd,"at+set_config=lora:dev_addr")!= NULL)
     {
         ptr = NULL;
         uint8_t i = 0;
@@ -270,8 +270,8 @@ void at_parse(char *cmd)
         return;
     }
     
-    //at+set_config=lora:apps_key:XXXX
-    if(strstr(cmd,"lora:apps_key")!= NULL)
+    // at+set_config=lora:apps_key:XXXX
+    if(strstr(cmd,"at+set_config=lora:apps_key")!= NULL)
     {
         uint8_t appskey[16];
         ptr = NULL;
@@ -298,8 +298,8 @@ void at_parse(char *cmd)
         return;
     }
     
-    //at+set_config=lora:nwkskey:XXXX
-    if(strstr(cmd,"lora:nwks_key")!= NULL)
+    // at+set_config=lora:nwkskey:XXXX
+    if(strstr(cmd,"at+set_config=lora:nwks_key")!= NULL)
     {
         uint8_t nwkskey[16];
         ptr = NULL;
@@ -326,8 +326,8 @@ void at_parse(char *cmd)
         return;
     }
     
-    //at+set_config=lora:region:XXX
-    if(strstr(cmd,"lora:region")!= NULL)
+    // at+set_config=lora:region:XXX
+    if(strstr(cmd,"at+set_config=lora:region")!= NULL)
     {
         LORA_REGION region;
         ptr = NULL;
@@ -341,8 +341,8 @@ void at_parse(char *cmd)
         return;
     }
     
-    //at+set_config=lora:join_mode:XXX
-    if(strstr(cmd,"lora:join_mode")!= NULL)
+    // at+set_config=lora:join_mode:XXX
+    if(strstr(cmd,"at+set_config=lora:join_mode")!= NULL)
     {
         uint8_t join_mode = RUI_OTAA;
         ptr = NULL;
@@ -362,7 +362,7 @@ void at_parse(char *cmd)
         return;
     }
     
-    //at+join
+    // at+join
     if(strstr(cmd,"at+join")!= NULL)
     {
         rui_lora_join();
@@ -370,7 +370,7 @@ void at_parse(char *cmd)
         return;
     }
     
-    //at+send=lora:X:YYY
+    // at+send=lora:X:YYY
     if(strstr(cmd,"at+send=lora")!= NULL)
     {
         ptr = NULL;
@@ -398,8 +398,8 @@ void at_parse(char *cmd)
         return;
     }
     
-    //at+set_config=lora:work_mode:X
-    if(strstr(cmd,"lora:work_mode")!= NULL)
+    // at+set_config=lora:work_mode:X
+    if(strstr(cmd,"at+set_config=lora:work_mode")!= NULL)
     {
         uint8_t work_mode = 0;
         ptr = NULL;
@@ -425,8 +425,8 @@ void at_parse(char *cmd)
         return;
     }
     
-    //at+set_config=lora:class:X
-    if(strstr(cmd,"lora:class")!= NULL)
+    // at+set_config=lora:class:X
+    if(strstr(cmd,"at+set_config=lora:class")!= NULL)
     {
         uint8_t class;
         ptr = NULL;
@@ -458,8 +458,8 @@ void at_parse(char *cmd)
         return;
     }
     
-    //at+set_config=lora:confirm:
-    if(strstr(cmd,"lora:confirm")!= NULL)
+    // at+set_config=lora:confirm:X
+    if(strstr(cmd,"at+set_config=lora:confirm")!= NULL)
     {
         bool confirm;
         ptr = NULL;
@@ -485,8 +485,8 @@ void at_parse(char *cmd)
         return;
     }
     
-    //at+set_config=lora:send_interval:X
-    if(strstr(cmd,"lora:send_interval")!= NULL)
+    // at+set_config=lora:send_interval:X
+    if(strstr(cmd,"at+set_config=lora:send_interval")!= NULL)
     {
         RUI_LORA_AUTO_SEND_MODE mode = RUI_AUTO_DISABLE;
         uint32_t sleep_period;
@@ -531,24 +531,24 @@ void at_parse(char *cmd)
         return;
     }
     
-    //at+get_config=lora:status
-    if(strstr(cmd,"lora:status")!= NULL)
+    // at+get_config=lora:status
+    if(strstr(cmd,"at+get_config=lora:status")!= NULL)
     {
         rui_lora_get_status(true, &lora_status);
         rui_at_response(true, NULL, RAK_OK);
         return;
     }
     
-    //at+get_config=lora:channel
-    if(strstr(cmd,"lora:channel")!= NULL)
+    // at+get_config=lora:channel
+    if(strstr(cmd,"at+get_config=lora:channel")!= NULL)
     {
         rui_get_channel_list();  // print lora channel list via uart
         rui_at_response(true, NULL, RAK_OK);
         return;
     }
 
-    //at+set_config=lora:ch_mask:X:Y
-    if(strstr(cmd,"lora:ch_mask")!= NULL)
+    // at+set_config=lora:ch_mask:X:Y
+    if(strstr(cmd,"at+set_config=lora:ch_mask")!= NULL)
     {
         uint8_t channel_num[4] = {0};
         uint8_t status = 0;
@@ -581,7 +581,7 @@ void at_parse(char *cmd)
     }
 
     // at+set_config=uart:work_mode:x
-    if (strstr(cmd, "uart:work_mode:")!=NULL)
+    if (strstr(cmd, "at+set_config=uart:work_mode:")!=NULL)
     {
         ptr = NULL;
         ptr = strstr(cmd, "work_mode:");
@@ -609,7 +609,7 @@ void at_parse(char *cmd)
     }
     
     // at+set_config=device:uart_mode:X:Y
-    if (strstr(cmd, "device:uart_mode:")!=NULL)
+    if (strstr(cmd, "at+set_config=device:uart_mode:")!=NULL)
     {
         ptr = NULL;
         ptr = strstr(cmd, "uart_mode:");
@@ -629,7 +629,7 @@ void at_parse(char *cmd)
     }
 
     // at+set_config=ble:work_mode:X:Y
-    if (strstr(cmd, "ble:work_mode:") != NULL)
+    if (strstr(cmd, "at+set_config=ble:work_mode:") != NULL)
     {
         uint8_t work_mode;
         bool long_range_enable;
