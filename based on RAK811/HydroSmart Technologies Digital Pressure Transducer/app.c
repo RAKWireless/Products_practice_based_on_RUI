@@ -6,6 +6,7 @@
 static uint8_t JoinCnt=0;
 static bool IsTxDone = false;   //Entry sleep flag
 static RUI_LORA_STATUS_T app_lora_status; //record lora status 
+bool sample_status = false;  //sensor sample record
 
 /*******************************************************************************************
  * The BSP user functions.
@@ -33,16 +34,17 @@ void bsp_init(void)
     Pressure_init();
 }
 
+double P_PSI,Temperature;
 void app_loop(void)
 {
     static uint8_t i=0;
-    double P_PSI,Temperature;
     rui_lora_get_status(false,&app_lora_status);
     if(app_lora_status.IsJoined)  //if LoRaWAN is joined
     {
         if(autosend_flag)
         {
             autosend_flag = false;
+            sample_status = true;
             Get_Pressure(&P_PSI,&Temperature);
 
             a[i++]=0x02;

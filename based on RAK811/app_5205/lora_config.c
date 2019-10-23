@@ -7,11 +7,11 @@
 
 
 #define MAX_ARGV        10
-static RUI_LORA_STATUS_T app_lora_status; //record lora status 
+static RUI_LORA_STATUS_T app_lora_status; //record status 
 
 
-static uint32_t handle_device_config(lora_config_t *config, int argc, char *argv[], char *in);
-static uint32_t handle_lora_config(lora_config_t *config, int argc, char *argv[], char *in);
+static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *argv[], char *in);
+static uint32_t handle_lora_config(RUI_LORA_STATUS_T *config, int argc, char *argv[], char *in);
 static uint32_t handle_lorap2p_config(RUI_LORA_STATUS_T *config, int argc, char *argv[], char *in);
 static uint32_t handle_device_status(void);
 static uint32_t user_set_gps_timeout(uint32_t gpstimeout);
@@ -126,20 +126,20 @@ static int read_config_string(RUI_LORA_STATUS_T *config, const char *in)
             if (argc > 3) 
             {
                 RUI_LOG_PRINTF("Too many parameters.\r\n");
-                return -1;
+                return FAIL ;
             }else if(argc < 3)
             {
                 RUI_LOG_PRINTF("Too few parameters.\r\n");
-                return -1;
+                return FAIL ;
             }
         }else if (argc > 2) 
         {
             RUI_LOG_PRINTF("Too many parameters.\r\n");
-            return -1;
+            return FAIL ;
         }else if(argc < 2) 
         {
             RUI_LOG_PRINTF("Too few parameters.\r\n");
-            return -1;
+            return FAIL ;
         }
 
         for (i = 0; i < sizeof(config_cmds)/sizeof(struct config_cmd); i++) 
@@ -147,7 +147,7 @@ static int read_config_string(RUI_LORA_STATUS_T *config, const char *in)
             if (strcmp(in, config_cmds[i].name) == 0) 
             {
                 ret = config_cmds[i].function(config,argc - 1,&argv[1], NULL);
-                if (ret < 0) 
+                if (ret != SUCCESS) 
                 {
                     return ret;
                 }
@@ -157,7 +157,7 @@ static int read_config_string(RUI_LORA_STATUS_T *config, const char *in)
         if (i == sizeof(config_cmds)/sizeof(struct config_cmd)) 
         {
             RUI_LOG_PRINTF("The AT Command is invalid\r\n");
-            return -1;
+            return FAIL ;
         }  
     }while(end != NULL); 
     return 0;   
@@ -178,7 +178,7 @@ static int write_config_string(RUI_LORA_STATUS_T *config, char *in)
             if ((strcmp(argv[0], config_cmds[0].name) != 0) && ( (strcmp(argv[0], config_cmds[2].name) != 0)))
             {
                 RUI_LOG_PRINTF("Too few parameters.\r\n");
-                return -1;
+                return FAIL ;
             }
         }
 
@@ -188,7 +188,7 @@ static int write_config_string(RUI_LORA_STATUS_T *config, char *in)
             if (strcmp(argv[0], config_cmds[i].name) == 0) 
             {
                 ret = config_cmds[i].function(config, argc - 1, &argv[1], NULL);
-                if (ret < 0) 
+                if (ret != SUCCESS) 
                 {
                     return ret;
                 }
@@ -198,7 +198,7 @@ static int write_config_string(RUI_LORA_STATUS_T *config, char *in)
         if (i == sizeof(config_cmds)/sizeof(struct config_cmd)) 
         {
             RUI_LOG_PRINTF("The AT Command is invalid.\r\n");
-            return -1;
+            return FAIL ;
         }          
     }while (end != NULL);
     
@@ -210,7 +210,7 @@ int write_config(char *in)
 {    
     int ret;
     ret = write_config_string(&app_lora_status, in);
-    if (ret < 0) {
+    if (ret != SUCCESS) {
         return ret;
     }      
     return ret;
@@ -220,14 +220,14 @@ int read_config(char *in)
 {
     int ret;  
     ret = read_config_string(&app_lora_status, in);
-    if (ret < 0) {
+    if (ret != SUCCESS) {
         return ret;
     }
     return ret;
 }
 
 
-static uint32_t handle_device_config(lora_config_t *config, int argc, char *argv[], char *in)
+static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *argv[], char *in)
 {
     uint8_t i;
     float x0,y0,z0;
@@ -245,7 +245,7 @@ static uint32_t handle_device_config(lora_config_t *config, int argc, char *argv
     if (i == sizeof(cmd_str)/sizeof(struct board_config_cmd)) 
     {
         RUI_LOG_PRINTF("The AT Command is invalid.\r\n");
-        return -1;            
+        return FAIL ;            
     }
     
     switch(cmd_str[i].board_enum)
@@ -256,12 +256,20 @@ static uint32_t handle_device_config(lora_config_t *config, int argc, char *argv
             rui_device_reset();
             break;
         case sleep:
-            if(argc != 2)return -1;
+            if(argc != 2)
+            {
+                RUI_LOG_PRINTF("Parameter format error.\r\n");
+                return FAIL ;
+            }
             if(atoi(argv[1]) <= 2)
             {
                 rui_device_sleep(atoi(argv[1]));
-                return -1;
-            }else return -1;
+                return FAIL ;
+            }else 
+            {
+                RUI_LOG_PRINTF("Parameter is invalid.\r\n");
+                return FAIL ;
+            }
             break; 
         case boot:
             rui_device_boot();  
@@ -270,11 +278,11 @@ static uint32_t handle_device_config(lora_config_t *config, int argc, char *argv
             if(argc < 3)
             {
                 RUI_LOG_PRINTF("Too few parameters.\r\n");
-                return -1;
+                return FAIL ;
             }else if(argc > 3)
             {
                 RUI_LOG_PRINTF("Too many parameters.\r\n");
-                return -1;
+                return FAIL ;
             }else
             {
                 switch(atoi(argv[2]))
@@ -296,21 +304,21 @@ static uint32_t handle_device_config(lora_config_t *config, int argc, char *argv
                     case 115200:br = BAUDRATE_115200;
                         break;
                     default:RUI_LOG_PRINTF("Parameter is invalid.\r\n");
-                    return -1;
+                    return FAIL ;
                     break;
                 }
-                if(rui_uart_init(atoi(argv[1]),br) < 0)return -1;
+                if(rui_uart_init(atoi(argv[1]),br) != SUCCESS)return FAIL ;
             }
             break; 
         case uart_mode:
             if(argc < 3)
             {
                 RUI_LOG_PRINTF("Too few parameters.\r\n");
-                return -1;
+                return FAIL ;
             }else if(argc > 3)
             {
                 RUI_LOG_PRINTF("Too many parameters.\r\n");
-                return -1;
+                return FAIL ;
             }else if(rui_uart_mode_config(atoi(argv[1]),atoi(argv[2])) == 0)
             {
                 switch(atoi(argv[2]))
@@ -320,7 +328,7 @@ static uint32_t handle_device_config(lora_config_t *config, int argc, char *argv
                     case RUI_UART_UNVARNISHED:RUI_LOG_PRINTF("Current AT uart work mode:unvarnished transmit mode\r\n");
                         break;   
                 }
-            }else return -1;
+            }else return FAIL ;
 
             break;
         case gpio:
@@ -330,15 +338,15 @@ static uint32_t handle_device_config(lora_config_t *config, int argc, char *argv
                 if(atoi(argv[0]) != 0)
                 {
                     RUI_LOG_PRINTF("Parameter format error.\r\n");
-                    return -1;
+                    return FAIL ;
                 }
                 rui_gpio.pin_num = atoi(argv[1]);
                 rui_gpio.dir = RUI_GPIO_PIN_DIR_INPUT;
                 rui_gpio_init(&rui_gpio);
-                if(rui_gpio_rw(0,&rui_gpio,&pinVal) < 0)
+                if(rui_gpio_rw(0,&rui_gpio,&pinVal) !=SUCCESS)
                 {
                     rui_gpio_uninit(&rui_gpio);
-                    return -1;
+                    return FAIL ;
                 }
                 RUI_LOG_PRINTF("OK,pin level is:%d\r\n", pinVal);
                 rui_gpio_uninit(&rui_gpio);
@@ -350,13 +358,13 @@ static uint32_t handle_device_config(lora_config_t *config, int argc, char *argv
                 rui_gpio.pin_num = atoi(argv[1]);
                 rui_gpio.dir = RUI_GPIO_PIN_DIR_OUTPUT;
                 rui_gpio_init(&rui_gpio);
-                if(rui_gpio_rw(1,&rui_gpio,&pinVal) < 0)
+                if(rui_gpio_rw(1,&rui_gpio,&pinVal) != SUCCESS)
                 {
                     rui_gpio_uninit(&rui_gpio);
-                    return -1;
+                    return FAIL ;
                 }
             }
-            else return -1;
+            else return FAIL ;
             break;         
         case adc:
             if(argc == 2)
@@ -365,25 +373,25 @@ static uint32_t handle_device_config(lora_config_t *config, int argc, char *argv
                 rui_gpio.pin_num = atoi(argv[1]);
                 rui_gpio.dir = RUI_GPIO_PIN_DIR_INPUT;
                 rui_adc_init(&rui_gpio);
-                if(rui_adc_get(&rui_gpio,&adc_value) < 0)
+                if(rui_adc_get(&rui_gpio,&adc_value) != SUCCESS)
                 {
                     rui_adc_uninit(&rui_gpio);
-                    return -1;
+                    return FAIL ;
                 }
                 RUI_LOG_PRINTF("OK,Voltage: %dmV.\r\n",adc_value);
                 rui_adc_uninit(&rui_gpio);
             }
-            else return -1;
+            else return FAIL ;
             break;
         case i2c:
             if(argc < 5)
             {
                 RUI_LOG_PRINTF("Too few parameters.\r\n");
-                return -1;
+                return FAIL ;
             }else if(argc >5)
             {
                 RUI_LOG_PRINTF("Too many parameters.\r\n");
-                return -1;
+                return FAIL ;
             }else
             {
                 uint8_t i2c_data[64]; 
@@ -396,8 +404,8 @@ static uint32_t handle_device_config(lora_config_t *config, int argc, char *argv
                 {
                     if(rui_i2c_rw(&I2c_temp,RUI_IF_READ,strtoul(argv[2],0,16),(uint16_t)strtoul(argv[3],0,16),i2c_data,(uint16_t)atoi(argv[4])) != 0)
                     {
-                        RUI_LOG_PRINTF("i2c read error.\r\n");                        
-                        return -1;
+                        RUI_LOG_PRINTF("i2c read error.\r\n");                                                
+                        return FAIL ;
                     }else
                     {
                         RUI_LOG_PRINTF("i2cdata: ");                        
@@ -411,7 +419,7 @@ static uint32_t handle_device_config(lora_config_t *config, int argc, char *argv
                     if (app_len%2) 
                     {
                         RUI_LOG_PRINTF("Parameter format error.\r\n");
-                        return -1;
+                        return FAIL ;
                     }
 
                     for (int i = 0; i < app_len; i++) 
@@ -419,7 +427,7 @@ static uint32_t handle_device_config(lora_config_t *config, int argc, char *argv
                         if (!isxdigit(send_data[i])) 
                         {
                             RUI_LOG_PRINTF("Please entry hexadecimal character.\r\n");
-                            return -1;   
+                            return FAIL ;   
                         }
                     }
                     
@@ -433,12 +441,12 @@ static uint32_t handle_device_config(lora_config_t *config, int argc, char *argv
                     if(rui_i2c_rw(&I2c_temp,RUI_IF_WRITE,strtoul(argv[2],0,16),(uint16_t)strtoul(argv[3],0,16),i2c_data,(uint16_t)atoi(argv[4])) != 0)
                     {
                         RUI_LOG_PRINTF("i2c write error.\r\n");
-                        return -1;
+                        return FAIL ;
                     } 
                 }else
                 {
                     RUI_LOG_PRINTF("i2c read/write format error.\r\n");
-                    return -1;
+                    return FAIL ;
                 }
                                
             }            
@@ -447,12 +455,16 @@ static uint32_t handle_device_config(lora_config_t *config, int argc, char *argv
             break;
         case gps_timeout:
             if(argc == 2)user_set_gps_timeout(atoi(argv[1]));
-            else return -1;
+            else 
+            {
+                RUI_LOG_PRINTF("The AT Command is invalid.\r\n");
+                return FAIL;
+            }
             break;
-        default :RUI_LOG_PRINTF("Parameter is invalid.\r\n");return -1;
+        default :RUI_LOG_PRINTF("Parameter is invalid.\r\n");return FAIL ;
             break;
     }
-    return 0;
+    return SUCCESS;
 
 }
 
@@ -461,26 +473,27 @@ static int verify_config_data(uint8_t argc,char* buffer,char len,char* lora_id)
     char hex_num[3] = {0};
     if (argc != 2) 
     {
-        return -1;
+        RUI_LOG_PRINTF("Parameter format error.\r\n");
+        return FAIL ;
     }             
     if (strlen(buffer) != 2*len) {
         RUI_LOG_PRINTF("Parameters length is invalid.\r\n");
-        return -1;
+        return FAIL ;
     }
     for (int i = 0; i < 2*len; i++) {
         if (!isxdigit(buffer[i])) {
             RUI_LOG_PRINTF("Please entry hexadecimal character parameter.\r\n");
-            return -1;    
+            return FAIL ;    
         }
     }
     for (int i = 0; i < len; i++) {
         memcpy(hex_num, &buffer[i*2], 2);
         lora_id[i] = strtoul(hex_num, NULL, 16);
     }
-   return 0;
+   return SUCCESS;
 }
 
-static uint32_t handle_lora_config(lora_config_t *config, int argc, char *argv[], char *in)
+static uint32_t handle_lora_config(RUI_LORA_STATUS_T *config, int argc, char *argv[], char *in)
 {
     uint8_t i;
     char lora_id[32];
@@ -496,7 +509,7 @@ static uint32_t handle_lora_config(lora_config_t *config, int argc, char *argv[]
     if (i == sizeof(cmd_str)/sizeof(struct board_config_cmd)) 
     {
         RUI_LOG_PRINTF("The AT Command is invalid.\r\n");
-        return -1;
+        return FAIL ;
     }     
 
    switch(cmd_str[i].board_enum)
@@ -523,42 +536,42 @@ static uint32_t handle_lora_config(lora_config_t *config, int argc, char *argv[]
             rui_lora_get_status(true,st);
             break;
         case dev_eui:            
-            if(verify_config_data(argc,argv[1],8,lora_id) == -1)return -1;        
+            if(verify_config_data(argc,argv[1],8,lora_id) != SUCCESS)return FAIL ;        
             rui_lora_set_dev_eui(lora_id);
             break;
         case app_eui:
-            if(verify_config_data(argc,argv[1],8,lora_id) == -1)return -1; 
+            if(verify_config_data(argc,argv[1],8,lora_id) != SUCCESS)return FAIL ; 
             rui_lora_set_app_eui(lora_id);
             break;
         case app_key:
-            if(verify_config_data(argc,argv[1],16,lora_id) < 0) return -1;  
+            if(verify_config_data(argc,argv[1],16,lora_id) != SUCCESS) return FAIL ;  
             rui_lora_set_app_key(lora_id);        
             break;
         case dev_addr:            
-            if(verify_config_data(argc,argv[1],4,lora_id) == -1)return -1;  
+            if(verify_config_data(argc,argv[1],4,lora_id) != SUCCESS)return FAIL ;  
             rui_lora_set_dev_addr(lora_id);    
             break;
         case apps_key:
-            if(verify_config_data(argc,argv[1],16,lora_id) == -1)return -1;
+            if(verify_config_data(argc,argv[1],16,lora_id) != SUCCESS)return FAIL ;
             rui_lora_set_apps_key(lora_id);   
             break;
         case nwks_key:
-            if(verify_config_data(argc,argv[1],16,lora_id) == -1)return -1;
+            if(verify_config_data(argc,argv[1],16,lora_id) != SUCCESS)return FAIL ;
             rui_lora_set_nwks_key(lora_id);            
             break;                
         case join_mode:
-            if(rui_lora_set_join_mode(atoi(argv[1])) < 0)return -1;  
+            if(rui_lora_set_join_mode(atoi(argv[1])) !=SUCCESS)return FAIL ;  
             if(atoi(argv[1])==0)RUI_LOG_PRINTF("join_mode:OTAA\r\n");     
             if(atoi(argv[1])==1)RUI_LOG_PRINTF("join_mode:ABP\r\n");     
             break;
         case work_mode:
-            if(rui_lora_set_work_mode(atoi(argv[1])) < 0)return -1;          
+            if(rui_lora_set_work_mode(atoi(argv[1])) != SUCCESS)return FAIL ;          
             break;
         case ch_mask:
-            if(rui_lora_set_channel_mask(atoi(argv[1]),atoi(argv[2])) < 0)return -1;
+            if(rui_lora_set_channel_mask(atoi(argv[1]),atoi(argv[2])) !=SUCCESS)return FAIL ;
             break;
         case class:
-            if(rui_lora_set_class(atoi(argv[1])) < 0)return -1; 
+            if(rui_lora_set_class(atoi(argv[1])) != SUCCESS)return FAIL ; 
             switch(atoi(argv[1]))
             {
                 case 0:RUI_LOG_PRINTF("Class:A\r\n");
@@ -571,7 +584,12 @@ static uint32_t handle_lora_config(lora_config_t *config, int argc, char *argv[]
             }        
             break;
         case confirm: 
-            if(rui_lora_set_confirm(atoi(argv[1])) < 0)return -1; 
+        	if(atoi(argv[1]) > 1)
+            {
+                RUI_LOG_PRINTF("Parameter is invalid.\r\n");
+                return FAIL;
+            }
+            if(rui_lora_set_confirm(atoi(argv[1])) != SUCCESS)return FAIL ; 
             switch(atoi(argv[1]))
             {
                 case 0:RUI_LOG_PRINTF("LoRaWAN Ack:unconfirm\r\n");
@@ -582,31 +600,35 @@ static uint32_t handle_lora_config(lora_config_t *config, int argc, char *argv[]
             }       
             break;   
         case dr: 
-            if(rui_lora_set_dr(atoi(argv[1])) < 0)return -1;        
+            if(rui_lora_set_dr(atoi(argv[1])) != SUCCESS)return FAIL ;        
             break;
         case tx_power:
-            if(rui_lora_set_tx_power(atoi(argv[1])) < 0)return -1;
+            if(rui_lora_set_tx_power(atoi(argv[1])) != SUCCESS)return FAIL ;
             break; 
         case adr: 
-            if(rui_lora_adr(atoi(argv[1])) < 0)return -1;        
+            if(rui_lora_adr(atoi(argv[1])) != SUCCESS)return FAIL ;        
             break; 
         case send_interval: 
-            if (argc != 3){return -1;} 
-            if(atoi(argv[1]) > 2)return -1;
+            if (argc != 3){RUI_LOG_PRINTF("Parameter format error.\r\n");return FAIL ;} 
+            if(atoi(argv[1]) > 2)
+            {
+                RUI_LOG_PRINTF("Parameter is invalid.\r\n");
+                return FAIL ;
+            }
             if(atoi(argv[1]) == 0)RUI_LOG_PRINTF("Close auto send data.\r\n");
             else if (atoi(argv[1]) == 1)
             {
-                RUI_LOG_PRINTF("Start auto send data with sleep.\r\n");                     
+                RUI_LOG_PRINTF("OK,Start auto send data with sleep.\r\n");                     
             }else if (atoi(argv[1]) == 2)
             {
-                RUI_LOG_PRINTF("Start auto send data,no sleep.\r\n");                     
+                RUI_LOG_PRINTF("OK,Start auto send data,no sleep.\r\n");                     
             }
-            if(rui_lora_set_send_interval(atoi(argv[1]),atoi(argv[2])) < 0)return -1;
+            if(rui_lora_set_send_interval(atoi(argv[1]),atoi(argv[2])) != SUCCESS)return FAIL ;
             break;
-        default :return -1;
+        default :RUI_LOG_PRINTF("The AT Command is invalid.\r\n");return FAIL ;
             break;
     }  
-    return 0;  
+    return SUCCESS;  
 }
 
 static uint32_t  handle_lorap2p_config(RUI_LORA_STATUS_T *config, int argc, char *argv[], char *in)
@@ -621,7 +643,7 @@ static uint32_t  handle_lorap2p_config(RUI_LORA_STATUS_T *config, int argc, char
     if(argc > 6)
     {
         RUI_LOG_PRINTF("Too many parameters.\r\n");
-        return -1;
+        return FAIL ;
     }
 
     Frequency = atoi(argv[0]);
@@ -630,68 +652,110 @@ static uint32_t  handle_lorap2p_config(RUI_LORA_STATUS_T *config, int argc, char
     if((atoi(argv[1])>12)||(atoi(argv[1])<7))
     {
         RUI_LOG_PRINTF("Spreadfact over limit <7-12>.\r\n");
-        return -1;
+        return FAIL ;
     } else Spreadfact = atoi(argv[1]);
 
     if((atoi(argv[2])>2)||(atoi(argv[2])<0))
     {
         RUI_LOG_PRINTF("Bandwidth over limit <0-2>.\r\n");
-        return -1;
+        return FAIL ;
     } else Bandwidth = atoi(argv[2]);
 
     if((atoi(argv[3])>4)||(atoi(argv[3])<1))
     {
         RUI_LOG_PRINTF("Codingrate over limit <1-4>.\r\n");
-        return -1;
+        return FAIL ;
     } else Codingrate = atoi(argv[3]);
 
     if((atoi(argv[4])>65535)||(atoi(argv[4])<2))
     {
         RUI_LOG_PRINTF("Preamlen over limit <5-65535>.\r\n");
-        return -1;
+        return FAIL ;
     } else Preamlen = atoi(argv[4]);
 
     if((atoi(argv[5])>20)||(atoi(argv[5])<0))
     {
         RUI_LOG_PRINTF("Powerdbm over limit <0-20>.\r\n");
-        return -1;
+        return FAIL ;
     } else Powerdbm = atoi(argv[5]);
 
-    if(rui_lorap2p_config(Frequency,Spreadfact,Bandwidth,Codingrate,Preamlen,Powerdbm)==0)return 0;
-    else return -1;
+    if(rui_lorap2p_config(Frequency,Spreadfact,Bandwidth,Codingrate,Preamlen,Powerdbm) == SUCCESS)return SUCCESS;
+    else 
+    {
+        return FAIL ;
+    }
 }
 
 
 extern bsp_sensor_data_t bsp_sensor;
 extern TimerEvent_t Gps_Cnt_Timer;  //search satellite timer
 extern user_store_data_t user_store_data;
+extern bool HasFix;
+extern bool sample_status ;
 static uint32_t handle_device_status(void)
 {
+    double latitude_tmp, longitude_tmp = 0;
+    double gps_lat, gps_lon;
+	int32_t gps_alt;
     RUI_LOG_PRINTF("OK.\r\n*************************************************\r\n===============Device Status List================\r\n"); 
 
     RUI_LOG_PRINTF("Board Core:  RAK811\r\n");
     RUI_LOG_PRINTF("MCU:  STM32L151CB_A\r\n");   
     RUI_LOG_PRINTF("LoRa chip:  SX1276\r\n"); 
-    RUI_LOG_PRINTF("\r\n");   
+    RUI_LOG_PRINTF("\r\n"); 
 
-    RUI_LOG_PRINTF("Battery Voltage:%d.%d V \r\n",(uint32_t)(bsp_sensor.voltage), (uint32_t)((bsp_sensor.voltage)*1000-((int32_t)(bsp_sensor.voltage)) * 1000));
+    if(sample_status)  
+    {
+        RUI_LOG_PRINTF("Battery Voltage:%d.%d V \r\n",(uint32_t)(bsp_sensor.voltage), (uint32_t)((bsp_sensor.voltage)*1000-((int32_t)(bsp_sensor.voltage)) * 1000));
+        RUI_LOG_PRINTF("\r\n"); 
+
+        RUI_LOG_PRINTF("GPS data:\r\n  gps_timeout: %ds\r\n",user_store_data.gps_timeout_cnt);
+        if(HasFix) 
+        {
+            RUI_LOG_PRINTF("  latitude: %d.%d, longitude: %d.%d, altitude: %d.%dm \r\n",
+                                (int32_t)bsp_sensor.latitude,abs((int32_t)(bsp_sensor.latitude*1000000-((int32_t)bsp_sensor.latitude) * 1000000)),
+                                (int32_t)bsp_sensor.longitude,abs((int32_t)(bsp_sensor.longitude*1000000-((int32_t)bsp_sensor.longitude) * 1000000)),    
+                                bsp_sensor.altitude/10,abs(bsp_sensor.altitude%10));
+        }else RUI_LOG_PRINTF("  No signal with Satellite.\r\n");                    
+        RUI_LOG_PRINTF("\r\n");                     
+
+        RUI_LOG_PRINTF("LIS3DH sensor data:\r\n");
+        RUI_LOG_PRINTF("  ACC_X: %dmg, ACC_Y: %dmg, ACC_Z: %dmg\r\n",(int32_t)bsp_sensor.triaxial_x , (int32_t)bsp_sensor.triaxial_y , (int32_t)bsp_sensor.triaxial_z );
+        RUI_LOG_PRINTF("\r\n"); 
+
+        RUI_LOG_PRINTF("BME680 sensor data:\r\n");
+        RUI_LOG_PRINTF("  Humidity:%d.%d %%RH\r\n",(int32_t)(bsp_sensor.humidity/1000),(int32_t)(bsp_sensor.humidity%1000));		
+        RUI_LOG_PRINTF("  Temperature:%d.%d degree\r\n",(int32_t)(bsp_sensor.temperature/100),(int32_t)(bsp_sensor.temperature%100));	
+        RUI_LOG_PRINTF("  Pressure:%d.%d hPa\r\n",(int32_t)(bsp_sensor.pressure/100),(int32_t)(bsp_sensor.pressure%100));	
+        RUI_LOG_PRINTF("  Gas_resistance: %d ohms \r\n", bsp_sensor.resis);	
+    }else
+    {
+        BoardBatteryMeasureVolage(&bsp_sensor.voltage);
+        bsp_sensor.voltage=bsp_sensor.voltage/1000.0;   //convert mV to V
+        RUI_LOG_PRINTF("Battery Voltage:%d.%d V \r\n",(uint32_t)(bsp_sensor.voltage), (uint32_t)((bsp_sensor.voltage)*1000-((int32_t)(bsp_sensor.voltage)) * 1000));
+        RUI_LOG_PRINTF("\r\n"); 
+
+        RUI_LOG_PRINTF("GPS data:\r\n  gps_timeout: %d\r\n",user_store_data.gps_timeout_cnt);
+        if(HasFix) 
+        {
+            GpsGetLatestGpsPositionDouble(&latitude_tmp, &longitude_tmp);
+			gps84_To_Gcj02(latitude_tmp, longitude_tmp, &gps_lat, &gps_lon);
+			GpsGetLatestGpsAltitude(&gps_alt);
+            RUI_LOG_PRINTF("  latitude: %d.%d, longitude: %d.%d , altitude: %d.%dm \r\n",
+						(int32_t)gps_lat,abs((int32_t)(gps_lat*1000000-((int32_t)gps_lat) * 1000000)),
+						(int32_t)gps_lon,abs((int32_t)(gps_lon*1000000-((int32_t)gps_lon) * 1000000)),    
+						gps_alt/10,abs(gps_alt%10));
+        }else RUI_LOG_PRINTF("  No signal with Satellite.\r\n");
+        RUI_LOG_PRINTF("\r\n"); 
+        
+        RUI_LOG_PRINTF("LIS3DH sensor data:\r\n");
+        lis3dh_get_data(&bsp_sensor.triaxial_x,&bsp_sensor.triaxial_y,&bsp_sensor.triaxial_z);
+        RUI_LOG_PRINTF("\r\n"); 
+
+        RUI_LOG_PRINTF("BME680 sensor data:\r\n");
+        BME680_get_data(&bsp_sensor.humidity,&bsp_sensor.temperature,&bsp_sensor.pressure,&bsp_sensor.resis); 
+    }
     
-    RUI_LOG_PRINTF("gps_timeout: %d\r\n",user_store_data.gps_timeout_cnt);
-    RUI_LOG_PRINTF("GPS data:");
-    RUI_LOG_PRINTF("  latitude: %d.%d, longitude: %d.%d , altitude: %d.%dm \r\n",
-						(int32_t)bsp_sensor.latitude,abs((int32_t)(bsp_sensor.latitude*1000000-((int32_t)bsp_sensor.latitude) * 1000000)),
-						(int32_t)bsp_sensor.longitude,abs((int32_t)(bsp_sensor.longitude*1000000-((int32_t)bsp_sensor.longitude) * 1000000)),    
-						bsp_sensor.altitude/10,abs(bsp_sensor.altitude%10));
-
-    RUI_LOG_PRINTF("LIS3DH sensor data:");
-    RUI_LOG_PRINTF("  LIS3DH X,Y,Z: %dmg, %dmg, %dmg\r\n",(int32_t)bsp_sensor.triaxial_x , (int32_t)bsp_sensor.triaxial_y , (int32_t)bsp_sensor.triaxial_z );
-
-    RUI_LOG_PRINTF("BME680 sensor data:\r\n");
-    RUI_LOG_PRINTF("  Humidity:%d.%d %%RH\r\n",(int32_t)(bsp_sensor.humidity/1000),(int32_t)(bsp_sensor.humidity%1000));		
-    RUI_LOG_PRINTF("  Temperature:%d.%d degree\r\n",(int32_t)(bsp_sensor.temperature/100),(int32_t)(bsp_sensor.temperature%100));	
-    RUI_LOG_PRINTF("  Pressure:%d.%d hPa\r\n",(int32_t)(bsp_sensor.pressure/100),(int32_t)(bsp_sensor.pressure%100));	
-    RUI_LOG_PRINTF("  Gas_resistance: %d ohms \r\n", bsp_sensor.resis);	
-
     RUI_LOG_PRINTF("===================List End======================\r\n"); 
     RUI_LOG_PRINTF("*************************************************\r\n");       
 }

@@ -61,8 +61,9 @@ int at_cmd_process(char *str)
 		
     if ((strncmp(str0, "at+", 3) != 0) || str0[3] == '\0') {
         RUI_LOG_PRINTF("AT format error.\r\n");
-        return -1;
+        return FAIL;
     }
+    // DUartPrint("[echo cmd:] %s\r\r\n", str0);
     str0 += 3;
     argc = parse_args(str0, argv);
     if (argc > 0) {
@@ -78,9 +79,10 @@ int at_cmd_process(char *str)
     }
     else {
         RUI_LOG_PRINTF("Parameter format error.\r\n");
-        return -1;
+        return FAIL;
     }
-    return 1;
+
+    return SUCCESS;
 }
 
 int check_hex_invaild(uint8_t *data, uint16_t len) 
@@ -92,9 +94,9 @@ int check_hex_invaild(uint8_t *data, uint16_t len)
         check2 |= data[i];
     }
     if (check1 == 0xff || check2 == 0) {
-        return 1;
+        return FAIL;
     }
-    return 0;
+    return SUCCESS;
 }
 
 
@@ -211,7 +213,7 @@ static void lora_read_config(int argc, char *argv[])
     }
     
     ret = read_config(argv[1]);
-    if (ret < 0) {
+    if (ret != SUCCESS) {
         return;
     } 
 }
@@ -225,7 +227,7 @@ static void lora_write_config(int argc, char *argv[])
     }
     
     ret = write_config(argv[1]);
-    if (ret < 0) {
+    if (ret != SUCCESS) {
         return ;
     } else {
         RUI_LOG_PRINTF("OK\r\n");
@@ -360,9 +362,9 @@ static void lora_send(int argc, char *argv[])
             memcpy(hex_num, &send_data[i*2], 2);
             send_data[i] = strtoul(hex_num, NULL, 16);
         } 
-        if(rui_lora_send(atoi(argv[2]),&send_data[0],app_len) < 0 )
+        if(rui_lora_send(atoi(argv[2]),&send_data[0],app_len) != SUCCESS )
         {
-            return -1;
+            return FAIL;
         } 
         RUI_LOG_PRINTF("OK\r\n");
         return;

@@ -18,12 +18,14 @@ const uint8_t level[2]={0,1};
 
 RUI_I2C_ST I2c_1;
 volatile static bool autosend_flag = false;    //auto send flag
+bool IsJoiningflag= false;  //flag whether joining or not status
 
 
 
 void rui_lora_autosend_callback(void)  //auto_send timeout event callback
 {
     autosend_flag = true;
+    IsJoiningflag = false;      
 }
 
 void bsp_i2c_init(void)
@@ -34,6 +36,8 @@ void bsp_i2c_init(void)
     I2c_1.FREQUENCY = RUI_I2C_FREQ_100K;
 
     rui_i2c_init(&I2c_1);
+
+    rui_delay_ms(50);
 
 }
 void bsp_init(void)
@@ -89,6 +93,7 @@ void LoRaWANJoined_callback(uint32_t status)
     if(status)  //Join Success
     {
         JoinCnt = 0;
+        IsJoiningflag = false;
         RUI_LOG_PRINTF("[LoRa]:Joined Successed!\r\n");
         rui_lora_get_status(false,&app_lora_status);
         if(app_lora_status.autosend_status != RUI_AUTO_DISABLE)
@@ -112,7 +117,10 @@ void LoRaWANJoined_callback(uint32_t status)
         else   //Join failed
         {
             RUI_LOG_PRINTF("[LoRa]:Joined Failed! \r\n"); 
-            JoinCnt=0;      
+			rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
+			rui_lora_set_send_interval(1,app_lora_status.lorasend_interval);  //start autosend_timer after send success
+			IsTxDone=true;  //Sleep flag set true
+            JoinCnt=0;   
         }          
     }    
 }
@@ -148,7 +156,7 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T status)
     if(app_lora_status.autosend_status)
     {
         rui_lora_set_send_interval(1,app_lora_status.lorasend_interval);  //start autosend_timer after send success
-        IsTxDone=true;  //Sleep flag set true
+        if(app_lora_status.autosend_status == RUI_AUTO_ENABLE_SLEEP) IsTxDone=true;  //Sleep flag set true
     } 
 }
 
@@ -197,14 +205,14 @@ void main(void)
  * 
  * *****************************************************************************************/    
     rui_lora_get_status(false,&app_lora_status);
-	
-	if(app_lora_status.autosend_status != RUI_AUTO_DISABLE)RUI_LOG_PRINTF("autosend_interval: %us\r\n", app_lora_status.lorasend_interval);
+    autosendtemp_status = app_lora_status.autosend_status;
+
+	RUI_LOG_PRINTF("autosend_interval: %us\r\n", app_lora_status.lorasend_interval);
+
 /*******************************************************************************************    
  *Init OK ,print board status and auto join LoRaWAN
  * 
  * *****************************************************************************************/  
-    RUI_LOG_PRINTF("Initialization OK,AT Uart work mode:normal mode, "); 
-
     switch(app_lora_status.work_mode)
 	{
 		case RUI_LORAWAN:
@@ -220,7 +228,6 @@ void main(void)
                         break;
                     default:break;
                 }                
-                rui_lora_join();  //join LoRaWAN by OTAA mode
             }else if(app_lora_status.join_mode == RUI_ABP)
             {
                 switch(app_lora_status.class_status)
@@ -243,10 +250,10 @@ void main(void)
 			break;
 		default: break;
 	}   
-  
+
     while(1)
     {       
-        rui_lora_get_status(false,&app_lora_status);//The query gets the current lora status 
+        rui_lora_get_status(false,&app_lora_status);//The query gets the current status 
         rui_running();
         switch(app_lora_status.work_mode)
         {
@@ -267,8 +274,9 @@ void main(void)
 
                 if(IsTxDone)
                 {
-                    IsTxDone=false;   
-                    rui_device_sleep(1);              
+                    
+                    rui_device_sleep(1); 
+					IsTxDone=false;                
                 }  
 
                 app_loop();  

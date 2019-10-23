@@ -74,14 +74,6 @@ void GpsInit( void )
     rui_uart_init(RUI_UART3,BAUDRATE_9600);
 
     GpsStart();
-    
-    rui_flash_read(RUI_FLASH_USER,&user_store_data.gps_timeout_cnt,2);  //read gps search satellite timer from flash
-
-    if(user_store_data.gps_timeout_cnt == 0)
-    {
-        user_store_data.gps_timeout_cnt = 100;  //set default gps search satellite timer:100s
-        rui_flash_write(RUI_FLASH_USER,&user_store_data.gps_timeout_cnt,2);
-    }
 
     RUI_LOG_PRINTF("GPS Init OK.GPS timeout:%ds\r\n",user_store_data.gps_timeout_cnt);
 

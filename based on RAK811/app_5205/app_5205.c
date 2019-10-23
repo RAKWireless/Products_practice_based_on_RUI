@@ -6,7 +6,7 @@
 #define JOIN_MAX_CNT 6
 static uint8_t JoinCnt=0;
 static bool IsTxDone = false;   //Entry sleep flag
-RUI_LORA_STATUS_T app_lora_status; //record lora status 
+RUI_LORA_STATUS_T app_lora_status; //record status 
 
 /*******************************************************************************************
  * The BSP user functions.
@@ -28,9 +28,12 @@ volatile static bool autosend_flag = false;    //auto send flag
 static uint8_t a[80]={};    // Data buffer to be sent by lora
 const uint8_t level[2]={0,1};
 bool IsJoiningflag= false;  //flag whether joining or not status
+bool sample_status = false;  //sensor sample record
 
 extern uint8_t NmeaString[];//GPS variate and buffer
 extern uint8_t NmeaStringSize;
+extern user_store_data_t user_store_data;
+extern TimerEvent_t Gps_Cnt_Timer;  //search satellite timer
 
 
 
@@ -60,7 +63,7 @@ void OnLed_Blue_TimerEvent(void)
     rui_gpio_rw(RUI_IF_WRITE,&Led_Blue, high);
 
     rui_lora_get_status(false,&app_lora_status);;//The query gets the current device status 
-    if(app_lora_status.autosend_status)
+    if(app_lora_status.autosend_status == RUI_AUTO_ENABLE_SLEEP)
     {
         IsTxDone=true;  //Sleep flag set true
     }
@@ -109,6 +112,12 @@ void bsp_i2c_init(void)
 }
 void bsp_init(void)
 {
+    rui_flash_read(RUI_FLASH_USER,&user_store_data,sizeof(user_store_data));  //Init user data from flash
+    if(user_store_data.gps_timeout_cnt == 0)
+    {
+        user_store_data.gps_timeout_cnt = 100;  //set default gps search satellite timer:100s
+        rui_flash_write(RUI_FLASH_USER,&user_store_data,sizeof(user_store_data));
+    }
     bsp_led_init();
     bsp_adc_init();
     bsp_i2c_init();
@@ -192,14 +201,14 @@ void app_loop(void)
 	        if(i != 0)
             {                    
                 autosend_flag=false; 
+                sample_status = true;
                 if(rui_lora_send(8,a,i) !=0)
                 {
                     RUI_LOG_PRINTF("[LoRa]: send error\r\n");                            
                     if(app_lora_status.autosend_status)
                     {
-                        rui_lora_get_status(false,&app_lora_status);  //The query gets the current lora status 
+                        rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
                         rui_lora_set_send_interval(1,app_lora_status.lorasend_interval);  //start autosend_timer after send success
-
                     }
                 }else RUI_LOG_PRINTF("[LoRa]: send out\r\n"); 
                 i=0;                       
@@ -210,9 +219,9 @@ void app_loop(void)
                 if(app_lora_status.autosend_status)
                 {
                     autosend_flag=false; 
-                    rui_lora_get_status(false,&app_lora_status);  //The query gets the current lora status 
+                    rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
                     rui_lora_set_send_interval(1,app_lora_status.lorasend_interval);  //start autosend_timer after send success
-                    IsTxDone=true;  //Sleep flag set true
+                    if(app_lora_status.autosend_status == RUI_AUTO_ENABLE_SLEEP)IsTxDone=true;  //Sleep flag set true
                 }                        
             }            					
         }
@@ -221,7 +230,7 @@ void app_loop(void)
         IsJoiningflag = true;
         if(rui_lora_join() != 0)
         {				
-            rui_lora_get_status(false,&app_lora_status);  //The query gets the current lora status 
+            rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
             rui_lora_set_send_interval(1,app_lora_status.lorasend_interval);  //start autosend_timer after send success
             IsTxDone=true;  //Sleep flag set true
         }
@@ -286,7 +295,7 @@ void LoRaWANJoined_callback(uint32_t status)
         else   //Join failed
         { 
             RUI_LOG_PRINTF("[LoRa]:Joined Failed! \r\n"); 
-			rui_lora_get_status(false,&app_lora_status);  //The query gets the current lora status 
+			rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
 			rui_lora_set_send_interval(1,app_lora_status.lorasend_interval);  //start autosend_timer after send success
 			IsTxDone=true;  //Sleep flag set true
             JoinCnt=0;   
@@ -321,10 +330,9 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T status)
         default:             
             break;
     } 
-    rui_lora_get_status(false,&app_lora_status);;//The query gets the current device status 
+    rui_lora_get_status(false,&app_lora_status);//The query gets the current device status 
     if(app_lora_status.autosend_status)   
     {
-        rui_lora_get_status(false,&app_lora_status);  //The query gets the current lora status 
         rui_lora_set_send_interval(1,app_lora_status.lorasend_interval);  //start autosend_timer after send success
         rui_gpio_rw(RUI_IF_WRITE,&Led_Blue, low);
         rui_timer_start(&Led_Blue_Timer); 
@@ -389,7 +397,7 @@ void main(void)
 
 
 /*******************************************************************************************    
- *The query gets the current device and lora status 
+ *The query gets the current status 
  * 
  * *****************************************************************************************/    
     rui_lora_get_status(false,&app_lora_status);
@@ -441,7 +449,7 @@ void main(void)
 
     while(1)
     {       
-        rui_lora_get_status(false,&app_lora_status);//The query gets the current lora status 
+        rui_lora_get_status(false,&app_lora_status);//The query gets the current status 
         rui_running();
         switch(app_lora_status.work_mode)
         {
@@ -463,6 +471,7 @@ void main(void)
                 if(IsTxDone)
                 {                      
                     GpsStop();  //close gps before entry sleep mode
+                    rui_timer_stop(&Gps_Cnt_Timer);  //stop search satellite timer
                     rui_device_sleep(1); 
                     IsTxDone=false; //Clear sleep flag                                  
                 }  
