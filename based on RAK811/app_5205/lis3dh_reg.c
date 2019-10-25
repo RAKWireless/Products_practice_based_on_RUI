@@ -828,6 +828,22 @@ int32_t lis3dh_acceleration_raw_get(lis3dh_ctx_t *ctx, uint8_t *buff)
 
   return ret;
 }
+//  #include "rui.h"
+// int32_t lis3dh_acceleration_raw_get(lis3dh_ctx_t *ctx, uint8_t *buff)
+// {
+//   int32_t ret;
+//   uint8_t whoamI;
+//   uint8_t bf[6];
+//   lis3dh_device_id_get(ctx, &whoamI);
+//   RUI_LOG_PRINTF("LIS3DH whoamI :%d.\r\n",whoamI);
+//   ret = lis3dh_read_reg(ctx, LIS3DH_OUT_X_L, buff, 6);
+//   memcpy(bf,buff,6);
+//   for(int8_t i=0;i<6;i++)
+//   {
+//     RUI_LOG_PRINTF("%d:%d\r\n",i,bf[i]);
+//   }
+//   return ret;
+// }
 /**
   * @}
   *

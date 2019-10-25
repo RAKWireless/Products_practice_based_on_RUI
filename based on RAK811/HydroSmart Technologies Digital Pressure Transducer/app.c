@@ -1,12 +1,12 @@
 #include "rui.h"
 #include "board.h"
 
+static RUI_RETURN_STATUS rui_return_status;
 //join cnt
 #define JOIN_MAX_CNT 6
 static uint8_t JoinCnt=0;
 static bool IsTxDone = false;   //Entry sleep flag
-static RUI_LORA_STATUS_T app_lora_status; //record lora status 
-bool sample_status = false;  //sensor sample record
+RUI_LORA_STATUS_T app_lora_status; //record status 
 
 /*******************************************************************************************
  * The BSP user functions.
@@ -19,12 +19,15 @@ const uint8_t level[2]={0,1};
 
 volatile static bool autosend_flag = false;    //auto send flag
 static uint8_t a[80]={};    // Data buffer to be sent by lora
+bool IsJoiningflag= false;  //flag whether joining or not status
+bool sample_status = false;  //flag sensor sample record for print sensor data by AT command
 
 
 
 void rui_lora_autosend_callback(void)  //auto_send timeout event callback
 {
     autosend_flag = true;
+    IsJoiningflag = false;      
     Pressure_init();
 }
 
@@ -37,38 +40,70 @@ void bsp_init(void)
 double P_PSI,Temperature;
 void app_loop(void)
 {
-    static uint8_t i=0;
+    static uint8_t sensor_data_cnt=0;  //send data counter by LoRa
     rui_lora_get_status(false,&app_lora_status);
     if(app_lora_status.IsJoined)  //if LoRaWAN is joined
     {
         if(autosend_flag)
         {
-            autosend_flag = false;
-            sample_status = true;
+            autosend_flag=false;             
+            rui_delay_ms(5);               
             Get_Pressure(&P_PSI,&Temperature);
 
-            a[i++]=0x02;
-            a[i++]=0x67;
-            a[i++]=((uint16_t)(Temperature*10)>>8) & 0xff;
-            a[i++]=((uint16_t)(Temperature*10)) & 0xff;
-            a[i++]=0x03;
-            a[i++]=0x02;
-            a[i++]=((uint16_t)(P_PSI*100)>>8) & 0xff;
-            a[i++]=((uint16_t)(P_PSI*100)) & 0xff;
+            a[sensor_data_cnt++]=0x02;
+            a[sensor_data_cnt++]=0x67;
+            a[sensor_data_cnt++]=((uint16_t)(Temperature*10)>>8) & 0xff;
+            a[sensor_data_cnt++]=((uint16_t)(Temperature*10)) & 0xff;
+            a[sensor_data_cnt++]=0x03;
+            a[sensor_data_cnt++]=0x02;
+            a[sensor_data_cnt++]=((uint16_t)(P_PSI*100)>>8) & 0xff;
+            a[sensor_data_cnt++]=((uint16_t)(P_PSI*100)) & 0xff;
 
-            if(rui_lora_send(8,a,i) !=0)
+            sample_status = true;
+            RUI_LOG_PRINTF("\r\n");
+            rui_return_status = rui_lora_send(8,a,sensor_data_cnt);
+            switch(rui_return_status)
             {
-                RUI_LOG_PRINTF("[LoRa]: send Error\r\n");                            
-                if(app_lora_status.autosend_status)
-                {
-                    rui_lora_get_status(false,&app_lora_status);  //The query gets the current lora status 
-                    rui_lora_set_send_interval(1,app_lora_status.lorasend_interval);  //start autosend_timer after send success
-
-                }
-            }else RUI_LOG_PRINTF("[LoRa]: Send out\r\n");
-            i = 0;
+                case RUI_STATUS_OK:RUI_LOG_PRINTF("[LoRa]: send out\r\n");
+                    break;
+                default: RUI_LOG_PRINTF("[LoRa]: send error %d\r\n",rui_return_status);
+                    rui_lora_get_status(false,&app_lora_status); 
+                    switch(app_lora_status.autosend_status)
+                    {
+                        case RUI_AUTO_ENABLE_SLEEP:rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after send success
+                            IsTxDone=true;  //Sleep flag set true
+                            break;
+                        case RUI_AUTO_ENABLE_NORMAL:rui_lora_set_send_interval(RUI_AUTO_ENABLE_NORMAL,app_lora_status.lorasend_interval);  //start autosend_timer after send success
+                            break;
+                        default:break;
+                    }
+					break;
+            }                 
+            sensor_data_cnt=0;                       
         }
-    }	
+    }else if(IsJoiningflag == false)
+    {
+        IsJoiningflag = true;
+        if(app_lora_status.join_mode == RUI_OTAA)
+        {
+            RUI_LOG_PRINTF("OTAA Join Start...\r\n");
+            rui_return_status = rui_lora_join();
+            switch(rui_return_status)
+            {
+                case RUI_STATUS_OK:break;
+                case RUI_LORA_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is not found.\r\n");
+                    rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
+                    rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after join failed
+                    IsTxDone=true;  //Sleep flag set true
+                    break;
+                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                    rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
+                    rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after join failed
+                    IsTxDone=true;  //Sleep flag set true
+                    break;
+            }            
+        }
+    }		
 }
 
 /*******************************************************************************************
@@ -108,6 +143,7 @@ void LoRaWANJoined_callback(uint32_t status)
     if(status)  //Join Success
     {
         JoinCnt = 0;
+        IsJoiningflag = false;
         RUI_LOG_PRINTF("[LoRa]:Joined Successed!\r\n");
         rui_lora_get_status(false,&app_lora_status);
         if(app_lora_status.autosend_status != RUI_AUTO_DISABLE)
@@ -131,7 +167,10 @@ void LoRaWANJoined_callback(uint32_t status)
         else   //Join failed
         {
             RUI_LOG_PRINTF("[LoRa]:Joined Failed! \r\n"); 
-            JoinCnt=0;      
+			rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
+			rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after send success
+			IsTxDone=true;  //Sleep flag set true
+            JoinCnt=0;   
         }          
     }    
 }
@@ -162,12 +201,17 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T status)
         }
         default:             
             break;
-    }     
-    rui_lora_get_status(false,&app_lora_status); 
-    if(app_lora_status.autosend_status)
+    }       
+    rui_lora_get_status(false,&app_lora_status);//The query gets the current status 
+    switch(app_lora_status.autosend_status)
     {
-        rui_lora_set_send_interval(1,app_lora_status.lorasend_interval);  //start autosend_timer after send success
-        IsTxDone=true;  //Sleep flag set true
+        case RUI_AUTO_ENABLE_SLEEP:rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after send success
+            rui_delay_ms(5);  
+            IsTxDone=true;  //Sleep flag set true
+            break;
+        case RUI_AUTO_ENABLE_NORMAL:rui_lora_set_send_interval(RUI_AUTO_ENABLE_NORMAL,app_lora_status.lorasend_interval);  //start autosend_timer after send success
+            break;
+        default:break;
     } 
 }
 
@@ -196,7 +240,7 @@ void rui_uart_recv(RUI_UART_DEF uart_def, uint8_t *pdata, uint16_t len)
  * *****************************************************************************************/ 
 void main(void)
 {
-    static bool autosendtemp_status;
+    static RUI_LORA_AUTO_SEND_MODE autosendtemp_status;  //Flag whether modify autosend_interval by AT_cmd  
 
     rui_init();
     bsp_init();
@@ -216,43 +260,45 @@ void main(void)
  * 
  * *****************************************************************************************/    
     rui_lora_get_status(false,&app_lora_status);
-	
-	if(app_lora_status.autosend_status != RUI_AUTO_DISABLE)RUI_LOG_PRINTF("autosend_interval: %us\r\n", app_lora_status.lorasend_interval);
+    autosendtemp_status = app_lora_status.autosend_status;
+
+	RUI_LOG_PRINTF("autosend_interval: %us\r\n", app_lora_status.lorasend_interval);
+
 /*******************************************************************************************    
  *Init OK ,print board status and auto join LoRaWAN
  * 
  * *****************************************************************************************/  
-    RUI_LOG_PRINTF("Initialization OK,AT Uart work mode:normal mode, "); 
-
     switch(app_lora_status.work_mode)
 	{
 		case RUI_LORAWAN:
+            RUI_LOG_PRINTF("Initialization OK,Current work_mode:LoRaWAN,");
             if(app_lora_status.join_mode == RUI_OTAA)
             {
+                RUI_LOG_PRINTF(" join_mode:OTAA,");  
                 switch(app_lora_status.class_status)
                 {
-                    case RUI_CLASS_A:RUI_LOG_PRINTF("Current work_mode:LoRaWAN, join_mode:OTAA, Class: A\r\n");
+                    case RUI_CLASS_A:RUI_LOG_PRINTF(" Class: A\r\n");
                         break;
-                    case RUI_CLASS_B:RUI_LOG_PRINTF("Current work_mode:LoRaWAN, join_mode:OTAA, Class: B\r\n");
+                    case RUI_CLASS_B:RUI_LOG_PRINTF(" Class: B\r\n");
                         break;
-                    case RUI_CLASS_C:RUI_LOG_PRINTF("Current work_mode:LoRaWAN, join_mode:OTAA, Class: C\r\n");
+                    case RUI_CLASS_C:RUI_LOG_PRINTF(" Class: C\r\n");
                         break;
                     default:break;
-                }                
-                rui_lora_join();  //join LoRaWAN by OTAA mode
+                }              
             }else if(app_lora_status.join_mode == RUI_ABP)
             {
+                RUI_LOG_PRINTF(" join_mode:ABP,\r\n");
                 switch(app_lora_status.class_status)
                 {
-                    case RUI_CLASS_A:RUI_LOG_PRINTF("Current work_mode:LoRaWAN, join_mode:ABP, Class: A\r\n");
+                    case RUI_CLASS_A:RUI_LOG_PRINTF(" Class: A\r\n");
                         break;
-                    case RUI_CLASS_B:RUI_LOG_PRINTF("Current work_mode:LoRaWAN, join_mode:ABP, Class: B\r\n");
+                    case RUI_CLASS_B:RUI_LOG_PRINTF(" Class: B\r\n");
                         break;
-                    case RUI_CLASS_C:RUI_LOG_PRINTF("Current work_mode:LoRaWAN, join_mode:ABP, Class: C\r\n");
+                    case RUI_CLASS_C:RUI_LOG_PRINTF(" Class: C\r\n");
                         break;
                     default:break;
-                }
-                if(rui_lora_join() == 0)//join LoRaWAN by ABP mode
+                } 
+                if(rui_lora_join() == RUI_STATUS_OK)//join LoRaWAN by ABP mode
                 {
                     LoRaWANJoined_callback(1);  //ABP mode join success
                 }
@@ -262,10 +308,10 @@ void main(void)
 			break;
 		default: break;
 	}   
-  
+    RUI_LOG_PRINTF("\r\n");
     while(1)
     {       
-        rui_lora_get_status(false,&app_lora_status);//The query gets the current lora status 
+        rui_lora_get_status(false,&app_lora_status);//The query gets the current status 
         rui_running();
         switch(app_lora_status.work_mode)
         {
@@ -276,7 +322,7 @@ void main(void)
                     if(autosendtemp_status == false)
                     {
                         autosendtemp_status = app_lora_status.autosend_status;
-                        rui_lora_set_send_interval(0,0);  //stop auto send data 
+                        rui_lora_set_send_interval(RUI_AUTO_DISABLE,0);  //stop auto send data 
                         autosend_flag=false;
                     }else
                     {
@@ -286,8 +332,9 @@ void main(void)
 
                 if(IsTxDone)
                 {
-                    IsTxDone=false;   
-                    rui_device_sleep(1);              
+                    
+                    rui_device_sleep(1); 
+					IsTxDone=false;                
                 }  
 
                 app_loop();  

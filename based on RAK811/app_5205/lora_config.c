@@ -5,9 +5,17 @@
 #include "rui.h"
 #include "bsp.h"
 
+#ifndef SUCCESS
+#define SUCCESS     0
+#endif
+
+#ifndef FAIL
+#define FAIL        1
+#endif
 
 #define MAX_ARGV        10
 static RUI_LORA_STATUS_T app_lora_status; //record status 
+static RUI_RETURN_STATUS rui_return_status;
 
 
 static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *argv[], char *in);
@@ -252,19 +260,28 @@ static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *
     {
         case restart:
             RUI_LOG_PRINTF("OK,restart ...\r\n");
-            rui_delay_ms(100);
+            rui_delay_ms(10);
             rui_device_reset();
             break;
         case sleep:
             if(argc != 2)
             {
-                RUI_LOG_PRINTF("Parameter format error.\r\n");
+                RUI_LOG_PRINTF("parameter is invalid.\r\n");
                 return FAIL ;
             }
             if(atoi(argv[1]) <= 2)
             {
-                rui_device_sleep(atoi(argv[1]));
-                return FAIL ;
+                rui_return_status = rui_device_sleep(atoi(argv[1]));
+                switch(rui_return_status)
+                {
+                    case RUI_STATUS_OK:
+                        RUI_LOG_PRINTF("wake up.\r\n");
+                        return SUCCESS;
+                    case RUI_LORA_STATUS_BUSY:
+                        RUI_LOG_PRINTF("radio status is busy,can't sleep.\r\n");
+                        return FAIL;
+                    default: RUI_LOG_PRINTF("unknown error.\r\n");return FAIL;
+                } 
             }else 
             {
                 RUI_LOG_PRINTF("Parameter is invalid.\r\n");
@@ -272,6 +289,7 @@ static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *
             }
             break; 
         case boot:
+            RUI_LOG_PRINTF("Work in Boot mode now...\r\n");
             rui_device_boot();  
             break;  
         case uart:
@@ -303,11 +321,19 @@ static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *
                         break;
                     case 115200:br = BAUDRATE_115200;
                         break;
-                    default:RUI_LOG_PRINTF("Parameter is invalid.\r\n");
-                    return FAIL ;
+                    default:RUI_LOG_PRINTF("Parameter is invalid.\r\n");return FAIL;
                     break;
                 }
-                if(rui_uart_init(atoi(argv[1]),br) != SUCCESS)return FAIL ;
+                rui_return_status = rui_uart_init(atoi(argv[1]),br);
+                switch(rui_return_status)
+                {
+                    case RUI_STATUS_OK:RUI_LOG_PRINTF("OK,The UART%d baud rate switch to %d.\r\n",atoi(argv[1]),br);
+                        return SUCCESS;
+                    case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("Parameter is invalid.\r\n");
+                        return FAIL;
+                    case RUI_STATUS_RW_FLASH_ERROR:RUI_LOG_PRINTF("flash operate error.\r\n");
+                        return FAIL;
+                }                
             }
             break; 
         case uart_mode:
@@ -319,16 +345,23 @@ static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *
             {
                 RUI_LOG_PRINTF("Too many parameters.\r\n");
                 return FAIL ;
-            }else if(rui_uart_mode_config(atoi(argv[1]),atoi(argv[2])) == 0)
+            }else 
             {
-                switch(atoi(argv[2]))
+                rui_return_status = rui_uart_mode_config(atoi(argv[1]),atoi(argv[2]));
+                switch(rui_return_status)
                 {
-                    case RUI_UART_NORAMAL: RUI_LOG_PRINTF("Current AT uart work mode:normal mode\r\n"); 
-                        break;
-                    case RUI_UART_UNVARNISHED:RUI_LOG_PRINTF("Current AT uart work mode:unvarnished transmit mode\r\n");
-                        break;   
+                    case RUI_STATUS_OK:
+                        switch(atoi(argv[2]))
+                            {
+                                case RUI_UART_NORAMAL: RUI_LOG_PRINTF("Current AT uart work mode:normal mode\r\n"); 
+                                    break;
+                                case RUI_UART_UNVARNISHED:RUI_LOG_PRINTF("Current AT uart work mode:unvarnished transmit mode\r\n");
+                                    break;   
+                            }
+                    case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("uart_mode is invalid.\r\n");
+                        return FAIL;
                 }
-            }else return FAIL ;
+            }
 
             break;
         case gpio:
@@ -343,12 +376,16 @@ static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *
                 rui_gpio.pin_num = atoi(argv[1]);
                 rui_gpio.dir = RUI_GPIO_PIN_DIR_INPUT;
                 rui_gpio_init(&rui_gpio);
-                if(rui_gpio_rw(0,&rui_gpio,&pinVal) !=SUCCESS)
+
+                rui_return_status = rui_gpio_rw(RUI_IF_READ,&rui_gpio,&pinVal);
+                switch(rui_return_status)
                 {
-                    rui_gpio_uninit(&rui_gpio);
-                    return FAIL ;
-                }
-                RUI_LOG_PRINTF("OK,pin level is:%d\r\n", pinVal);
+                    case RUI_STATUS_OK:RUI_LOG_PRINTF("OK,pin level is:%d\r\n", pinVal);
+                    case RUI_STATUS_PARAMETER_INVALID:
+                        RUI_LOG_PRINTF("parameter is invalid.\r\n");
+                        return FAIL ;
+                    default:RUI_LOG_PRINTF("unknown error.\r\n");return FAIL ;
+                }                
                 rui_gpio_uninit(&rui_gpio);
             }
             else if(argc == 3)
@@ -358,13 +395,26 @@ static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *
                 rui_gpio.pin_num = atoi(argv[1]);
                 rui_gpio.dir = RUI_GPIO_PIN_DIR_OUTPUT;
                 rui_gpio_init(&rui_gpio);
-                if(rui_gpio_rw(1,&rui_gpio,&pinVal) != SUCCESS)
+                rui_return_status = rui_gpio_rw(RUI_IF_WRITE,&rui_gpio,&pinVal);
+                switch(rui_return_status)
                 {
-                    rui_gpio_uninit(&rui_gpio);
-                    return FAIL ;
+                    case RUI_STATUS_OK:RUI_LOG_PRINTF("OK\r\n");
+                        return SUCCESS;
+                    case RUI_STATUS_PARAMETER_INVALID:
+                        RUI_LOG_PRINTF("parameter is invalid.\r\n");
+                        rui_gpio_uninit(&rui_gpio);
+                        return FAIL ;
+                    default:
+                        RUI_LOG_PRINTF("unknown error.\r\n");
+                        rui_gpio_uninit(&rui_gpio);
+                        return FAIL ;
                 }
             }
-            else return FAIL ;
+            else 
+            {
+                RUI_LOG_PRINTF("unknown error.\r\n");
+                return FAIL ;
+            }
             break;         
         case adc:
             if(argc == 2)
@@ -372,16 +422,38 @@ static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *
                 uint16_t adc_value;
                 rui_gpio.pin_num = atoi(argv[1]);
                 rui_gpio.dir = RUI_GPIO_PIN_DIR_INPUT;
-                rui_adc_init(&rui_gpio);
-                if(rui_adc_get(&rui_gpio,&adc_value) != SUCCESS)
+
+                rui_return_status = rui_adc_init(&rui_gpio);
+                switch(rui_return_status)
                 {
-                    rui_adc_uninit(&rui_gpio);
-                    return FAIL ;
+                    case RUI_STATUS_OK:break;
+                    case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is invalid.\r\n");
+                        rui_adc_uninit(&rui_gpio);
+                        return FAIL;
+                    default: RUI_LOG_PRINTF("unknown error.\r\n");
+                        rui_adc_uninit(&rui_gpio);
+                        return FAIL;
                 }
-                RUI_LOG_PRINTF("OK,Voltage: %dmV.\r\n",adc_value);
-                rui_adc_uninit(&rui_gpio);
+
+                rui_return_status = rui_adc_get(&rui_gpio,&adc_value);
+                switch(rui_return_status)
+                {
+                    case RUI_STATUS_OK:RUI_LOG_PRINTF("OK,Voltage: %dmV.\r\n",adc_value);
+                        rui_adc_uninit(&rui_gpio);
+                        break;
+                    case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is invalid.\r\n");
+                        rui_adc_uninit(&rui_gpio);
+                        return FAIL;
+                    default: RUI_LOG_PRINTF("unknown error.\r\n");
+                        rui_adc_uninit(&rui_gpio);
+                        return FAIL;
+                }                 
             }
-            else return FAIL ;
+            else 
+            {
+                RUI_LOG_PRINTF("unknown error.\r\n");
+                return FAIL ;
+            }
             break;
         case i2c:
             if(argc < 5)
@@ -402,15 +474,18 @@ static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *
                 I2c_temp.INSTANCE_ID = 1;
                 if(atoi(argv[1])==0)
                 {
-                    if(rui_i2c_rw(&I2c_temp,RUI_IF_READ,strtoul(argv[2],0,16),(uint16_t)strtoul(argv[3],0,16),i2c_data,(uint16_t)atoi(argv[4])) != 0)
+                    rui_return_status = rui_i2c_rw(&I2c_temp,RUI_IF_READ,strtoul(argv[2],0,16),(uint16_t)strtoul(argv[3],0,16),i2c_data,(uint16_t)atoi(argv[4]));
+                    switch(rui_return_status)
                     {
-                        RUI_LOG_PRINTF("i2c read error.\r\n");                                                
-                        return FAIL ;
-                    }else
-                    {
-                        RUI_LOG_PRINTF("i2cdata: ");                        
-                        for(int8_t z=0; z<(uint16_t)atoi(argv[4]); z++)RUI_LOG_PRINTF("%d ",i2c_data[z]);
-                        RUI_LOG_PRINTF("\r\n");
+                        case RUI_STATUS_OK:
+                            RUI_LOG_PRINTF("i2cdata: ");                        
+                            for(int8_t z=0; z<(uint16_t)atoi(argv[4]); z++)RUI_LOG_PRINTF("%d ",i2c_data[z]);
+                            RUI_LOG_PRINTF("\r\n");
+                            break;
+                        case RUI_STATUS_IIC_RW_ERROR:
+                            RUI_LOG_PRINTF("i2c read error.\r\n");
+                            return FAIL;
+                        default: RUI_LOG_PRINTF("unknown error.\r\n");return FAIL;
                     }
                 }else if(atoi(argv[1])==1)
                 {
@@ -437,12 +512,18 @@ static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *
                         memcpy(hex_num, &send_data[i*2], 2);
                         i2c_data[i] = strtoul(hex_num, NULL, 16);
                     }
-                    
-                    if(rui_i2c_rw(&I2c_temp,RUI_IF_WRITE,strtoul(argv[2],0,16),(uint16_t)strtoul(argv[3],0,16),i2c_data,(uint16_t)atoi(argv[4])) != 0)
+
+                    rui_return_status = rui_i2c_rw(&I2c_temp,RUI_IF_WRITE,strtoul(argv[2],0,16),(uint16_t)strtoul(argv[3],0,16),i2c_data,(uint16_t)atoi(argv[4]));
+                    switch(rui_return_status)
                     {
-                        RUI_LOG_PRINTF("i2c write error.\r\n");
-                        return FAIL ;
-                    } 
+                        case RUI_STATUS_OK:
+                            RUI_LOG_PRINTF("OK\r\n");
+                            return SUCCESS;
+                        case RUI_STATUS_IIC_RW_ERROR:
+                            RUI_LOG_PRINTF("i2c write error.\r\n");
+                            return FAIL;
+                        default: RUI_LOG_PRINTF("unknown error.\r\n");return FAIL;
+                    }                    
                 }else
                 {
                     RUI_LOG_PRINTF("i2c read/write format error.\r\n");
@@ -522,66 +603,176 @@ static uint32_t handle_lora_config(RUI_LORA_STATUS_T *config, int argc, char *ar
             } 
             else 
             {	
-                if (rw_Str2Region(argv[1]) == 100) 
+                if (rw_String2Region(argv[1]) == 100) 
                 {
                     RUI_LOG_PRINTF("No region found.\r\n");
-                    return;
+                    return FAIL;
                 }
-                else return rui_lora_set_region(rw_Str2Region(argv[1]));
+                else
+                {
+                    rui_return_status = rui_lora_set_region(rw_String2Region(argv[1]));
+                    switch(rui_return_status)
+                    {
+                        case RUI_STATUS_OK:	RUI_LOG_PRINTF("Band switch success.\r\n");
+                            rui_lora_get_status(false,&app_lora_status);//The query gets the current status 
+                            if(app_lora_status.work_mode == RUI_LORAWAN) 
+                            {
+                                RUI_LOG_PRINTF("Join Start...\r\n");
+                                if(rui_lora_join() != RUI_STATUS_OK)
+                                {				
+                                    rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
+                                    rui_lora_set_send_interval(1,app_lora_status.lorasend_interval);  //start autosend_timer after join failed
+                                }
+                            }
+                            return SUCCESS;
+                        case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is invalid.\r\n");
+                            return FAIL;
+                        default: RUI_LOG_PRINTF("unknown error.\r\n");
+                            return FAIL;
+                    } 
+                }                
             }
             break;
-        case channel:rui_get_channel_list();
+        case channel:rui_return_status = rui_get_channel_list();
             break;
         case status:
-            rui_lora_get_status(true,st);
+            rui_return_status = rui_lora_get_status(true,st);
             break;
         case dev_eui:            
             if(verify_config_data(argc,argv[1],8,lora_id) != SUCCESS)return FAIL ;        
-            rui_lora_set_dev_eui(lora_id);
+            rui_return_status = rui_lora_set_dev_eui(lora_id);
+            switch(rui_return_status)
+            {
+                case RUI_STATUS_OK:RUI_LOG_PRINTF("OK\r\n");
+                    return SUCCESS;
+                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                    return FAIL;
+            } 
             break;
         case app_eui:
             if(verify_config_data(argc,argv[1],8,lora_id) != SUCCESS)return FAIL ; 
-            rui_lora_set_app_eui(lora_id);
+            rui_return_status = rui_lora_set_app_eui(lora_id);
+            switch(rui_return_status)
+            {
+                case RUI_STATUS_OK:RUI_LOG_PRINTF("OK\r\n");
+                    return SUCCESS;
+                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                    return FAIL;
+            } 
             break;
         case app_key:
             if(verify_config_data(argc,argv[1],16,lora_id) != SUCCESS) return FAIL ;  
-            rui_lora_set_app_key(lora_id);        
+            rui_return_status = rui_lora_set_app_key(lora_id);
+            switch(rui_return_status)
+            {
+                case RUI_STATUS_OK:RUI_LOG_PRINTF("OK\r\n");
+                    return SUCCESS;
+                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                    return FAIL;
+            }         
             break;
         case dev_addr:            
             if(verify_config_data(argc,argv[1],4,lora_id) != SUCCESS)return FAIL ;  
-            rui_lora_set_dev_addr(lora_id);    
+            rui_return_status = rui_lora_set_dev_addr(lora_id); 
+            switch(rui_return_status)
+            {
+                case RUI_STATUS_OK:RUI_LOG_PRINTF("OK\r\n");
+                    return SUCCESS;
+                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                    return FAIL;
+            }    
             break;
         case apps_key:
             if(verify_config_data(argc,argv[1],16,lora_id) != SUCCESS)return FAIL ;
-            rui_lora_set_apps_key(lora_id);   
+            rui_return_status = rui_lora_set_apps_key(lora_id);
+            switch(rui_return_status)
+            {
+                case RUI_STATUS_OK:RUI_LOG_PRINTF("OK\r\n");
+                    return SUCCESS;
+                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                    return FAIL;
+            }    
             break;
         case nwks_key:
             if(verify_config_data(argc,argv[1],16,lora_id) != SUCCESS)return FAIL ;
-            rui_lora_set_nwks_key(lora_id);            
+            rui_return_status = rui_lora_set_nwks_key(lora_id);
+            switch(rui_return_status)
+            {
+                case RUI_STATUS_OK:RUI_LOG_PRINTF("OK\r\n");
+                    return SUCCESS;
+                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                    return FAIL;
+            }             
             break;                
         case join_mode:
-            if(rui_lora_set_join_mode(atoi(argv[1])) !=SUCCESS)return FAIL ;  
-            if(atoi(argv[1])==0)RUI_LOG_PRINTF("join_mode:OTAA\r\n");     
-            if(atoi(argv[1])==1)RUI_LOG_PRINTF("join_mode:ABP\r\n");     
+            rui_return_status = rui_lora_set_join_mode(atoi(argv[1]));
+            switch(rui_return_status)
+            {
+                case RUI_STATUS_OK:
+                    if(atoi(argv[1])==0) RUI_LOG_PRINTF("OK,join_mode:OTAA\r\n");     
+                    else if(atoi(argv[1])==1) RUI_LOG_PRINTF("OK,join_mode:ABP\r\n");
+                    break;  
+                default:RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                    return FAIL; 
+            }               
             break;
         case work_mode:
-            if(rui_lora_set_work_mode(atoi(argv[1])) != SUCCESS)return FAIL ;          
+            rui_return_status = rui_lora_set_work_mode(atoi(argv[1]));
+            switch(rui_return_status)
+            {
+                case RUI_STATUS_OK:
+                    switch (atoi(argv[1]))
+                    {
+                        case RUI_LORAWAN:RUI_LOG_PRINTF("Work_mode switch to LoRaWAN mode,Reset now...\r\n");
+                            rui_device_reset();
+                            break;
+                        case RUI_P2P:RUI_LOG_PRINTF("Work_mode switch to P2P mode,Reset now...\r\n");
+                            rui_device_reset();
+                            break;		
+                        default:RUI_LOG_PRINTF("parameter is invalid.\r\n");
+                            return FAIL;
+                    }
+                    return SUCCESS;
+                case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is invalid.\r\n");
+                    return FAIL;
+                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                    return FAIL;
+            }        
             break;
         case ch_mask:
-            if(rui_lora_set_channel_mask(atoi(argv[1]),atoi(argv[2])) !=SUCCESS)return FAIL ;
+            rui_return_status = rui_lora_set_channel_mask(atoi(argv[1]),atoi(argv[2]));
+            switch(rui_return_status)
+            {
+                case RUI_STATUS_OK:RUI_LOG_PRINTF("OK\r\n");
+                    return SUCCESS;
+                case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is invalid.\r\n");
+                    return FAIL;
+                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                    return FAIL;
+            } 
             break;
         case class:
-            if(rui_lora_set_class(atoi(argv[1])) != SUCCESS)return FAIL ; 
-            switch(atoi(argv[1]))
+            rui_return_status = rui_lora_set_class(atoi(argv[1]));
+            switch(rui_return_status)
             {
-                case 0:RUI_LOG_PRINTF("Class:A\r\n");
-                    break;
-                case 1:RUI_LOG_PRINTF("Class:B\r\n");
-                    break;
-                case 2:RUI_LOG_PRINTF("Class:C\r\n");
-                    break;
-                default: break;
-            }        
+                case RUI_STATUS_OK:
+                    switch(atoi(argv[1]))
+                    {
+                        case 0:RUI_LOG_PRINTF("OK,LoRaWAN switch to ClassA mode\r\n");
+                            break;
+                        case 1:RUI_LOG_PRINTF("OK,LoRaWAN switch to ClassB mode\r\n");
+                            break;
+                        case 2:RUI_LOG_PRINTF("OK,LoRaWAN switch to ClassC mode\r\n");
+                            break;
+                        default: RUI_LOG_PRINTF("parameter is invalid.\r\n");
+                            return FAIL;
+                    }
+                    return SUCCESS;
+                case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is invalid.\r\n");
+                    return FAIL;
+                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                    return FAIL;
+            }                     
             break;
         case confirm: 
         	if(atoi(argv[1]) > 1)
@@ -589,24 +780,60 @@ static uint32_t handle_lora_config(RUI_LORA_STATUS_T *config, int argc, char *ar
                 RUI_LOG_PRINTF("Parameter is invalid.\r\n");
                 return FAIL;
             }
-            if(rui_lora_set_confirm(atoi(argv[1])) != SUCCESS)return FAIL ; 
-            switch(atoi(argv[1]))
+            rui_return_status = rui_lora_set_confirm(atoi(argv[1]));
+            switch(rui_return_status)
             {
-                case 0:RUI_LOG_PRINTF("LoRaWAN Ack:unconfirm\r\n");
-                    break;
-                case 1:RUI_LOG_PRINTF("LoRaWAN Ack:confirm\r\n");
-                    break;
-                default: break;
-            }       
+                case RUI_STATUS_OK:
+                    switch(atoi(argv[1]))
+                    {
+                        case 0:RUI_LOG_PRINTF("OK,LoRaWAN Ack:unconfirm\r\n");
+                            break;
+                        case 1:RUI_LOG_PRINTF("OK,LoRaWAN Ack:confirm\r\n");
+                            break;
+                        default: RUI_LOG_PRINTF("Parameter is invalid.\r\n");
+                            return FAIL;
+                    } 
+                case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is invalid.\r\n");
+                    return FAIL;
+                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                    return FAIL;
+            }      
             break;   
-        case dr: 
-            if(rui_lora_set_dr(atoi(argv[1])) != SUCCESS)return FAIL ;        
-            break;
-        case tx_power:
-            if(rui_lora_set_tx_power(atoi(argv[1])) != SUCCESS)return FAIL ;
+        case dr:
+            rui_return_status = rui_lora_set_dr(atoi(argv[1]));
+            switch(rui_return_status)
+            {
+                case RUI_STATUS_OK:RUI_LOG_PRINTF("OK\r\n");
+                    return SUCCESS;
+                case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is invalid.\r\n");
+                    return FAIL;
+                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                    return FAIL;
+            }        
+            break;        
+        case adr:
+            rui_return_status = rui_lora_adr(atoi(argv[1]));
+            switch(rui_return_status)
+            {
+                case RUI_STATUS_OK:RUI_LOG_PRINTF("OK\r\n");
+                    return SUCCESS;
+                case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is invalid.\r\n");
+                    return FAIL;
+                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                    return FAIL;
+            }         
             break; 
-        case adr: 
-            if(rui_lora_adr(atoi(argv[1])) != SUCCESS)return FAIL ;        
+        case tx_power:
+            rui_return_status = rui_lora_set_tx_power(atoi(argv[1]));
+            switch(rui_return_status)
+            {
+                case RUI_STATUS_OK:RUI_LOG_PRINTF("OK\r\n");
+                    return SUCCESS;
+                case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is invalid.\r\n");
+                    return FAIL;
+                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                    return FAIL;
+            } 
             break; 
         case send_interval: 
             if (argc != 3){RUI_LOG_PRINTF("Parameter format error.\r\n");return FAIL ;} 
@@ -618,12 +845,21 @@ static uint32_t handle_lora_config(RUI_LORA_STATUS_T *config, int argc, char *ar
             if(atoi(argv[1]) == 0)RUI_LOG_PRINTF("Close auto send data.\r\n");
             else if (atoi(argv[1]) == 1)
             {
-                RUI_LOG_PRINTF("OK,Start auto send data with sleep.\r\n");                     
+                RUI_LOG_PRINTF("Start auto send data with sleep.\r\n");                     
             }else if (atoi(argv[1]) == 2)
             {
-                RUI_LOG_PRINTF("OK,Start auto send data,no sleep.\r\n");                     
+                RUI_LOG_PRINTF("Start auto send data,no sleep.\r\n");                     
             }
-            if(rui_lora_set_send_interval(atoi(argv[1]),atoi(argv[2])) != SUCCESS)return FAIL ;
+            rui_return_status = rui_lora_set_send_interval(atoi(argv[1]),atoi(argv[2]));
+            switch(rui_return_status)
+            {
+                case RUI_STATUS_OK:RUI_LOG_PRINTF("OK\r\n");
+                    return SUCCESS;
+                case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is invalid.\r\n");
+                    return FAIL;
+                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                    return FAIL;
+            } 
             break;
         default :RUI_LOG_PRINTF("The AT Command is invalid.\r\n");return FAIL ;
             break;
@@ -679,9 +915,14 @@ static uint32_t  handle_lorap2p_config(RUI_LORA_STATUS_T *config, int argc, char
         return FAIL ;
     } else Powerdbm = atoi(argv[5]);
 
-    if(rui_lorap2p_config(Frequency,Spreadfact,Bandwidth,Codingrate,Preamlen,Powerdbm) == SUCCESS)return SUCCESS;
+    if(rui_lorap2p_config(Frequency,Spreadfact,Bandwidth,Codingrate,Preamlen,Powerdbm) == RUI_STATUS_OK)
+    {
+        RUI_LOG_PRINTF("OK\r\n");
+        return SUCCESS;
+    }
     else 
     {
+        RUI_LOG_PRINTF("Fail,radio status is busy\r\n");
         return FAIL ;
     }
 }
@@ -706,12 +947,14 @@ static uint32_t handle_device_status(void)
 
     if(sample_status)  
     {
+        /*If sampled sensor data, print send sensor data here*/
         RUI_LOG_PRINTF("Battery Voltage:%d.%d V \r\n",(uint32_t)(bsp_sensor.voltage), (uint32_t)((bsp_sensor.voltage)*1000-((int32_t)(bsp_sensor.voltage)) * 1000));
         RUI_LOG_PRINTF("\r\n"); 
 
-        RUI_LOG_PRINTF("GPS data:\r\n  gps_timeout: %ds\r\n",user_store_data.gps_timeout_cnt);
+        RUI_LOG_PRINTF("gps_timeout: %ds\r\n",user_store_data.gps_timeout_cnt);
+        RUI_LOG_PRINTF("GPS data:\r\n");
         if(HasFix) 
-        {
+        {            
             RUI_LOG_PRINTF("  latitude: %d.%d, longitude: %d.%d, altitude: %d.%dm \r\n",
                                 (int32_t)bsp_sensor.latitude,abs((int32_t)(bsp_sensor.latitude*1000000-((int32_t)bsp_sensor.latitude) * 1000000)),
                                 (int32_t)bsp_sensor.longitude,abs((int32_t)(bsp_sensor.longitude*1000000-((int32_t)bsp_sensor.longitude) * 1000000)),    
@@ -730,14 +973,16 @@ static uint32_t handle_device_status(void)
         RUI_LOG_PRINTF("  Gas_resistance: %d ohms \r\n", bsp_sensor.resis);	
     }else
     {
+        /*If not sampled sensor data, print current sensor data here */
         BoardBatteryMeasureVolage(&bsp_sensor.voltage);
         bsp_sensor.voltage=bsp_sensor.voltage/1000.0;   //convert mV to V
         RUI_LOG_PRINTF("Battery Voltage:%d.%d V \r\n",(uint32_t)(bsp_sensor.voltage), (uint32_t)((bsp_sensor.voltage)*1000-((int32_t)(bsp_sensor.voltage)) * 1000));
         RUI_LOG_PRINTF("\r\n"); 
 
-        RUI_LOG_PRINTF("GPS data:\r\n  gps_timeout: %d\r\n",user_store_data.gps_timeout_cnt);
+        RUI_LOG_PRINTF("gps_timeout: %ds\r\n",user_store_data.gps_timeout_cnt);
+        RUI_LOG_PRINTF("GPS data:\r\n");
         if(HasFix) 
-        {
+        {            
             GpsGetLatestGpsPositionDouble(&latitude_tmp, &longitude_tmp);
 			gps84_To_Gcj02(latitude_tmp, longitude_tmp, &gps_lat, &gps_lon);
 			GpsGetLatestGpsAltitude(&gps_alt);
@@ -746,13 +991,11 @@ static uint32_t handle_device_status(void)
 						(int32_t)gps_lon,abs((int32_t)(gps_lon*1000000-((int32_t)gps_lon) * 1000000)),    
 						gps_alt/10,abs(gps_alt%10));
         }else RUI_LOG_PRINTF("  No signal with Satellite.\r\n");
-        RUI_LOG_PRINTF("\r\n"); 
+        RUI_LOG_PRINTF("\r\n");        
         
-        RUI_LOG_PRINTF("LIS3DH sensor data:\r\n");
         lis3dh_get_data(&bsp_sensor.triaxial_x,&bsp_sensor.triaxial_y,&bsp_sensor.triaxial_z);
         RUI_LOG_PRINTF("\r\n"); 
-
-        RUI_LOG_PRINTF("BME680 sensor data:\r\n");
+        
         BME680_get_data(&bsp_sensor.humidity,&bsp_sensor.temperature,&bsp_sensor.pressure,&bsp_sensor.resis); 
     }
     
@@ -766,6 +1009,9 @@ uint32_t user_set_gps_timeout(uint32_t gpstimeout)
     rui_timer_stop(&Gps_Cnt_Timer); 
     rui_timer_setvalue( &Gps_Cnt_Timer, user_store_data.gps_timeout_cnt * 1000 );
     rui_timer_start(&Gps_Cnt_Timer); //restart search satellite timer
-    rui_flash_write(RUI_FLASH_USER,&user_store_data.gps_timeout_cnt,2);
+    if(rui_flash_write(RUI_FLASH_USER,&user_store_data,sizeof(user_store_data)) == RUI_STATUS_PARAMETER_INVALID )
+    {
+        RUI_LOG_PRINTF("the length over size.\r\n");
+    }
 }
 

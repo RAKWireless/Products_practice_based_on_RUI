@@ -26,14 +26,39 @@
 #include "timer.h"
 #endif
 
-/* RUI API return value, just success or fail*/
-#ifndef SUCCESS
-#define SUCCESS     0
-#endif
+/* RUI API return value*/
+typedef enum{
+ RUI_STATUS_OK=0,
+ RUI_STATUS_PARAMETER_INVALID,
+ RUI_STATUS_RW_FLASH_ERROR,
+ RUI_STATUS_GPIO_IRQ_DISABLE,
+ RUI_STATUS_BUS_INIT_FAIL,
+ RUI_STATUS_TIMER_FAIL,
+ RUI_STATUS_IIC_RW_ERROR,
+ RUI_STATUS_UART_SEND_ERROR,
+ 
+ RUI_SENSOR_STATUS_OK=20,
 
-#ifndef FAIL
-#define FAIL        1
-#endif
+ RUI_BLE_STATUS_OK=40,
+
+ RUI_CELLULAR_STATUS_OK=60,
+
+
+ RUI_LORA_STATUS_BUSY=80,
+ RUI_LORA_STATUS_SERVICE_UNKNOWN,
+ RUI_LORA_STATUS_PARAMETER_INVALID,
+ RUI_LORA_STATUS_FREQUENCY_INVALID,
+ RUI_LORA_STATUS_DATARATE_INVALID,
+ RUI_LORA_STATUS_FREQ_AND_DR_INVALID,
+ RUI_LORA_STATUS_NO_NETWORK_JOINED,
+ RUI_LORA_STATUS_LENGTH_ERROR,
+ RUI_LORA_STATUS_DEVICE_OFF,
+ RUI_LORA_STATUS_REGION_NOT_SUPPORTED,
+ RUI_LORA_STATUS_DUTYCYCLE_RESTRICTED,
+ RUI_LORA_STATUS_NO_CHANNEL_FOUND,
+ RUI_LORA_STATUS_NO_FREE_CHANNEL_FOUND
+ 
+}RUI_RETURN_STATUS;
 
 
 typedef struct RUI_RECEIVE
@@ -227,6 +252,12 @@ typedef enum RUI_IF_READ_WRITE
 
 typedef struct RUI_LORA_STATUS
 {
+    uint32_t dev_addr;
+    uint8_t dev_eui[8];
+    uint8_t app_eui[8];
+    uint8_t app_key[16];
+    uint8_t nwks_key[16];
+    uint8_t apps_key[16];
     RUI_LORA_WORK_MODE work_mode;
     RUI_LORA_CLASS_MODE class_status;
     RUI_LORA_JOIN_MODE join_mode;
@@ -285,6 +316,18 @@ typedef enum
     RUI_GPIO_PIN_PULLUP    //  Pin pull-up resistor enabled.
 } RUI_GPIO_PIN_PULL_ST;
 
+typedef enum {
+    RUI_GPIO_EDGE_RAISE,
+    RUI_GPIO_EDGE_FALL,
+    RUI_GPIO_EDGE_FALL_RAISE
+} RUI_GPIO_INTERRUPT_EDGE;
+
+typedef enum {
+    RUI_GPIO_IRQ_HIGH_PRIORITY,
+    RUI_GPIO_IRQ_NORMAL_PRIORITY,
+    RUI_GPIO_IRQ_LOW_PRIORITY,
+} RUI_GPIO_INTERRUPT_PRIORITY;
+
 typedef struct {
     uint32_t pin_num;
     RUI_GPIO_PIN_DIR_ST dir;
@@ -312,27 +355,27 @@ typedef enum {
 
 /***************************************************************************************
  * @brief       This API is used to configure the parameters for uart.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       RUI_UART_DEF uart_def:  the instance of uart.
                 RUI_UART_BAUDRATE baudrate:  Uart baudrate value.
 ***************************************************************************************/
-uint32_t rui_uart_init(RUI_UART_DEF uart_def,RUI_UART_BAUDRATE baudrate);
+RUI_RETURN_STATUS rui_uart_init(RUI_UART_DEF uart_def,RUI_UART_BAUDRATE baudrate);
 
 /***************************************************************************************
  * @brief       This API is used to uninit uart.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       RUI_UART_DEF uart_def:  the instance of uart.
 ***************************************************************************************/
-uint32_t rui_uart_uninit(RUI_UART_DEF uart_def);
+RUI_RETURN_STATUS rui_uart_uninit(RUI_UART_DEF uart_def);
 
 /***************************************************************************************
  * @brief       This API is used to send data via uart.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       RUI_UART_DEF uart_def:  the instance of uart.
                 uint8_t *pdata:  the pointer of data.
                 uint16_t len:  the lengh of data.
 ***************************************************************************************/
-uint32_t rui_uart_send(RUI_UART_DEF uart_def, uint8_t *pdata, uint16_t len);
+RUI_RETURN_STATUS rui_uart_send(RUI_UART_DEF uart_def, uint8_t *pdata, uint16_t len);
 
 /***************************************************************************************
  * @brief       This API is used to receive data from uart.
@@ -345,70 +388,70 @@ void rui_uart_recv(RUI_UART_DEF uart_def, uint8_t *pdata, uint16_t len);
 
 /***************************************************************************************
  * @brief       This API is used to configure uart work mode.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       RUI_UART_DEF uart_def:the instance of uart.
                 RUI_UART_MODE uart_mode: value for RUI_UART_NORAMAL,RUI_UART_UNVARNISHED.
 ***************************************************************************************/
-uint32_t rui_uart_mode_config(RUI_UART_DEF uart_def,RUI_UART_MODE uart_mode);
+RUI_RETURN_STATUS rui_uart_mode_config(RUI_UART_DEF uart_def,RUI_UART_MODE uart_mode);
 
 /***************************************************************************************
  * @brief       This API is used to remap tx/rx pin.
                 Applicable only to RAK4600 with official expansion board
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       bool mode: true-USB_MODE, false-Module_Mode
                 Default is Module_Mode, this setting restores the default after restart.
 ***************************************************************************************/
-uint32_t rui_uart_pin_mode_change(bool mode);
+RUI_RETURN_STATUS rui_uart_pin_mode_change(bool mode);
 
 /***************************************************************************************
  * @brief       This API is used to configure gpio.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       RUI_GPIO_ST *rui_gpio:the instance of gpio.
 ***************************************************************************************/
-uint32_t rui_gpio_init(RUI_GPIO_ST *rui_gpio);
+RUI_RETURN_STATUS rui_gpio_init(RUI_GPIO_ST *rui_gpio);
 
 /***************************************************************************************
  * @brief       This API is used to deinit gpio.
- * @return      SUCCESS or FAIL
+ * @return      void
  * @param       RUI_GPIO_ST *rui_gpio:the instance of gpio.
 ***************************************************************************************/
 void rui_gpio_uninit(RUI_GPIO_ST *rui_gpio);
 
 /***************************************************************************************
  * @brief       This API is used to read or set a certain gpio's status.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       RUI_IF_READ_WRITE rw: read or set.
                 RUI_GPIO_ST *rui_gpio: the  stru of gpio which you want to read or set.
                 uint8_t* status:  the pointer of gpio value.
                                   0: low level, 1: high level.
 ***************************************************************************************/
-uint32_t rui_gpio_rw(RUI_IF_READ_WRITE rw_status,RUI_GPIO_ST *rui_gpio,uint8_t* status);
+RUI_RETURN_STATUS rui_gpio_rw(RUI_IF_READ_WRITE rw_status,RUI_GPIO_ST *rui_gpio,uint8_t* status);
 
 /***************************************************************************************
  * @brief       This API is used to init ADC
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       RUI_GPIO_ST *rui_gpio:the instance of gpio.
 ***************************************************************************************/
-uint32_t rui_adc_init(RUI_GPIO_ST *rui_gpio);
+RUI_RETURN_STATUS rui_adc_init(RUI_GPIO_ST *rui_gpio);
 
 /***************************************************************************************
  * @brief       This API is used to uninit ADC
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       RUI_GPIO_ST *rui_gpio:the instance of gpio.
 ***************************************************************************************/
-uint32_t rui_adc_uninit(RUI_GPIO_ST *rui_gpio);
+RUI_RETURN_STATUS rui_adc_uninit(RUI_GPIO_ST *rui_gpio);
 
 /***************************************************************************************
  * @brief       This API is used to read the value of ADC pin
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t* value:  the value which is read from ADC.
                 RUI_GPIO_ST *rui_gpio:  gpio stru
 ***************************************************************************************/
-uint32_t rui_adc_get(RUI_GPIO_ST *rui_gpio, uint16_t* value);
+RUI_RETURN_STATUS rui_adc_get(RUI_GPIO_ST *rui_gpio, uint16_t* value);
 
 /***************************************************************************************
  * @brief       This API is used to read/write through I2C.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       RUI_I2C_ST *rui_i2c:        i2c instance.
                 RUI_IF_READ_WRITE rw:       read or write through I2C.
                 uint8_t devAddr:            device address, in Hex format. if no addr, use 0
@@ -416,256 +459,256 @@ uint32_t rui_adc_get(RUI_GPIO_ST *rui_gpio, uint16_t* value);
                 uint8_t* data:              the data read out or will be write through i2c.
                 uint16_t len:               the data length. the unit is byte.
 ***************************************************************************************/
-uint32_t rui_i2c_rw(RUI_I2C_ST *rui_i2c,RUI_IF_READ_WRITE rw, uint8_t devAddr, uint16_t regAddr, uint8_t* data, uint16_t len);
+RUI_RETURN_STATUS rui_i2c_rw(RUI_I2C_ST *rui_i2c,RUI_IF_READ_WRITE rw, uint8_t devAddr, uint16_t regAddr, uint8_t* data, uint16_t len);
 
 /***************************************************************************************
  * @brief       This API is used to init I2C.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       RUI_I2C_ST *rui_i2c:  init parameters struct.
 ***************************************************************************************/
-uint32_t rui_i2c_init(RUI_I2C_ST *rui_i2c);
+RUI_RETURN_STATUS rui_i2c_init(RUI_I2C_ST *rui_i2c);
 
 /***************************************************************************************
  * @brief       This API is used to init SPI.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       RUI_SPI_ST *rui_spi:  init parameters struct.
 ***************************************************************************************/
-uint32_t rui_spi_init(RUI_SPI_ST *rui_spi);
+RUI_RETURN_STATUS rui_spi_init(RUI_SPI_ST *rui_spi);
 
 /***************************************************************************************
  * @brief       This API is used to read/write through SPI.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       RUI_IF_READ_WRITE mode: read or write
                 uint8_t *tx:      write through spi.
                 uint16_t tx_len:  tx length.
                 uint8_t *rx:      read buffer.
                 uint16_t rx_len:  rx length.
 ***************************************************************************************/
-uint32_t rui_spi_rw(RUI_IF_READ_WRITE mode, uint8_t *tx, uint16_t tx_len, uint8_t *rx, uint16_t rx_len);
+RUI_RETURN_STATUS rui_spi_rw(RUI_IF_READ_WRITE mode, uint8_t *tx, uint16_t tx_len, uint8_t *rx, uint16_t rx_len);
 
 /***************************************************************************************
  * @brief       This API is used to get the GPS data from GPS module.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       RUI_GPS_DATA *data:  the GPS data
 ***************************************************************************************/
-uint32_t rui_gps_get(RUI_GPS_DATA *data);
+RUI_RETURN_STATUS rui_gps_get(RUI_GPS_DATA *data);
 
 /***************************************************************************************
  * @brief       This API is used to set the work mode of the GPS module.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       RUI_DRIVER_MODE mode:   the GPS module's work mode.
 ***************************************************************************************/
-uint32_t rui_gps_set_mode(RUI_DRIVER_MODE mode);
+RUI_RETURN_STATUS rui_gps_set_mode(RUI_DRIVER_MODE mode);
 
 /***************************************************************************************
  * @brief       This API is used to send data through cellular.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t *data:  the data which will be sent through cellular.
  **************************************************************************************/
-uint32_t rui_cellular_send(uint8_t *data);
+RUI_RETURN_STATUS rui_cellular_send(uint8_t *data);
 
 /***************************************************************************************
  * @brief       This API is used to join to remote server with user's config.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       void
 **************************************************************************************/
-uint32_t rui_cellular_join(void);
+RUI_RETURN_STATUS rui_cellular_join(void);
 
 /***************************************************************************************
  * @brief       This API is used to open or close cellular.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t on: 0-off,1-on
 **************************************************************************************/
-uint32_t rui_cellular_mode(uint8_t on);
+RUI_RETURN_STATUS rui_cellular_mode(uint8_t on);
 
 /***************************************************************************************
  * @brief       This API is used to config ip and port of remote server for tcp link.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t *ip:  ip of remote server.
                 uint8_t *port:  port of remote server.
 **************************************************************************************/
-uint32_t rui_cellular_set_server(uint8_t *ip,uint8_t *port);
+RUI_RETURN_STATUS rui_cellular_set_server(uint8_t *ip,uint8_t *port);
 
 /***************************************************************************************
  * @brief       This API is used to open socket of remote server for tcp link.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t* data: open tcp link cmd like:AT+QIOPEN=1,0,"TCP","ip",port,0,1"
 **************************************************************************************/
-uint32_t rui_cellular_open_socket(uint8_t* data);
+RUI_RETURN_STATUS rui_cellular_open_socket(uint8_t* data);
 
 /***************************************************************************************
  * @brief       This API is used to config parameters of operator.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t *APN:       APN of operator.
                 uint8_t *operator_long_name :  operator_long_name of operator.
                 uint8_t *operator_short_name:  operator_short_name of operator
                 uint8_t operator_net        :  operator_net of operator
 **************************************************************************************/
-uint32_t rui_cellular_set_operator(uint8_t *APN,uint8_t *operator_long_name,uint8_t *operator_short_name,uint8_t operator_net);
+RUI_RETURN_STATUS rui_cellular_set_operator(uint8_t *APN,uint8_t *operator_long_name,uint8_t *operator_short_name,uint8_t operator_net);
 
 /***************************************************************************************
  * @brief       This API is used to wait for a correct response from cellular module.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t *response:  the response of server string
                 uint32_t len:       response data length
                 uint32_t timeout:   the time to wait for response until timeout.
 ****************************************************************************************/
-uint32_t rui_cellular_response(uint8_t *response, uint32_t len, uint32_t timeout);
+RUI_RETURN_STATUS rui_cellular_response(uint8_t *response, uint32_t len, uint32_t timeout);
 
 /****************************************************************************************
  * @brief       This API is used to set the work mode of the cellular module.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       RUI_DRIVER_MODE mode:  the cellular module's work mode
  ***************************************************************************************/
-uint32_t rui_cellular_set_mode(RUI_DRIVER_MODE mode);
+RUI_RETURN_STATUS rui_cellular_set_mode(RUI_DRIVER_MODE mode);
 
 /****************************************************************************************
  * @brief       This API is used to get the connect status the cellular module.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t *status: 0 holoram; 1 server
  ***************************************************************************************/
-uint32_t rui_cellular_connect_status(uint8_t *status);
+RUI_RETURN_STATUS rui_cellular_connect_status(uint8_t *status);
 
 /****************************************************************************************
  * @brief       This API is used to send all sensors data to holorgam server.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       void
  ***************************************************************************************/
-uint32_t rui_cellular_hologram_send(void);
+RUI_RETURN_STATUS rui_cellular_hologram_send(void);
 
 /***************************************************************************************
  * @brief       This API is used to register a callback function for cellular in application
                 so that application can receive cellular data automatically.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       cellular_receive callback:  the callback function for receiving cellular data.
 ***************************************************************************************/
 typedef void (*cellular_receive)(uint8_t *data);
-uint32_t rui_cellular_register_recv_callback(cellular_receive callback);
+RUI_RETURN_STATUS rui_cellular_register_recv_callback(cellular_receive callback);
 
 /***************************************************************************************
  * @brief       rui_lora_join       join to server
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       void
 ***************************************************************************************/
-uint32_t rui_lora_join(void);
+RUI_RETURN_STATUS rui_lora_join(void);
 
 /***************************************************************************************
  * @brief       rui_lora_send
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t port:   send data port
                 uint8_t* data:  send data string
                 uint8_t len:    send data length
 ***************************************************************************************/
-uint32_t rui_lora_send(uint8_t port,uint8_t* data,uint8_t len);
+RUI_RETURN_STATUS rui_lora_send(uint8_t port,uint8_t* data,uint8_t len);
 
 /***************************************************************************************
  * @brief       This API is used to register a callback function for LoRa in application,
                 so that application can receive the LoRa data automatically.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       lora_receive callback:  the callback function for receiving LoRa data.
 ***************************************************************************************/
 typedef void (*lora_receive)(RUI_RECEIVE_T *data);
-uint32_t rui_lora_register_recv_callback(lora_receive callback);
+RUI_RETURN_STATUS rui_lora_register_recv_callback(lora_receive callback);
 
 /***************************************************************************************
  * @brief       This API is used to set the work mode of LoRa module.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       RUI_DRIVER_MODE mode:  lora peripheral work mode
 ***************************************************************************************/
-uint32_t rui_lora_set_device_mode(RUI_DRIVER_MODE mode);
+RUI_RETURN_STATUS rui_lora_set_device_mode(RUI_DRIVER_MODE mode);
 
 /***************************************************************************************
  * @brief       This API is used to set the device EUI for LoRaWAN OTAA mode.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t *dev_eui:   the device EUI.
 ***************************************************************************************/
-uint32_t rui_lora_set_dev_eui(uint8_t *dev_eui);
+RUI_RETURN_STATUS rui_lora_set_dev_eui(uint8_t *dev_eui);
 
 /***************************************************************************************
  * @brief       This API is used to set the application EUI for LoRaWAN OTAA mode.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t *app_eui:   the application EUI.
 ***************************************************************************************/
-uint32_t rui_lora_set_app_eui(uint8_t *app_eui);
+RUI_RETURN_STATUS rui_lora_set_app_eui(uint8_t *app_eui);
 
 /***************************************************************************************
  * @brief       This API is used to set the application key for LoRaWAN OTAA mode.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t *app_key:   the application key.
 ***************************************************************************************/
-uint32_t rui_lora_set_app_key(uint8_t *app_key);
+RUI_RETURN_STATUS rui_lora_set_app_key(uint8_t *app_key);
 
 /***************************************************************************************
  * @brief       This API is used to set the device address for LoRaWAN ABP mode.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t *dev_addr:  the device address.
 ***************************************************************************************/
-uint32_t rui_lora_set_dev_addr(uint8_t *dev_addr);
+RUI_RETURN_STATUS rui_lora_set_dev_addr(uint8_t *dev_addr);
 
 /***************************************************************************************
  * @brief       This API is used to set the application session key for LoRaWAN ABP mode.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t *apps_key: the application session key.
 ***************************************************************************************/
-uint32_t rui_lora_set_apps_key(uint8_t *apps_key);
+RUI_RETURN_STATUS rui_lora_set_apps_key(uint8_t *apps_key);
 
 /***************************************************************************************
  * @brief       This API is used to set the network session key for LoRaWAN ABP mode.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t *nwks_key:  the network session key.
 ***************************************************************************************/
-uint32_t rui_lora_set_nwks_key(uint8_t *nwks_key);
+RUI_RETURN_STATUS rui_lora_set_nwks_key(uint8_t *nwks_key);
 
 /***************************************************************************************
  * @brief       This API is used to turn a certain channel on or off.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t channel:  the channel number you want to set.
                 uint8_t on_off:  turn on or turn off.
 ***************************************************************************************/
-uint32_t rui_lora_set_channel_mask(uint8_t channel, uint8_t on_off);
+RUI_RETURN_STATUS rui_lora_set_channel_mask(uint8_t channel, uint8_t on_off);
 
 /***************************************************************************************
  * @brief       This API is used to set the LoRaWAN Class.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       LORA_CLASS_MODE class:  Class A, Class B, or Class C.
 ***************************************************************************************/
-uint32_t rui_lora_set_class(RUI_LORA_CLASS_MODE class);
+RUI_RETURN_STATUS rui_lora_set_class(RUI_LORA_CLASS_MODE class);
 
 /***************************************************************************************
  * @brief       This API is used to set the send confirm.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       bool is_confirm: true-confirm, false-unconfirm.
 ***************************************************************************************/
-uint32_t rui_lora_set_confirm(bool is_confirm);
+RUI_RETURN_STATUS rui_lora_set_confirm(bool is_confirm);
 
 /***************************************************************************************
  * @brief       This API is used to set the DR for LoRa node.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t dr: the value of DR.
 ***************************************************************************************/
-uint32_t rui_lora_set_dr(uint8_t dr);
+RUI_RETURN_STATUS rui_lora_set_dr(uint8_t dr);
 
 /***************************************************************************************
  * @brief       This API is used to set the join mode of LoRaWAN.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       LORA_JOIN_MODE mode:    OTAA or ABP
 ***************************************************************************************/
-uint32_t rui_lora_set_join_mode(RUI_LORA_JOIN_MODE mode);
+RUI_RETURN_STATUS rui_lora_set_join_mode(RUI_LORA_JOIN_MODE mode);
 
 /***************************************************************************************
  * @brief       This API is used to set the work mode of LoRa module.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       LORA_WORK_MODE mode:    LaRaWAN, P2P, or Test mode.
 ***************************************************************************************/
-uint32_t rui_lora_set_work_mode(RUI_LORA_WORK_MODE mode);
+RUI_RETURN_STATUS rui_lora_set_work_mode(RUI_LORA_WORK_MODE mode);
 
 /***************************************************************************************
  * @brief       This API is used to set the interval time of sending data.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       RUI_LORA_AUTO_SEND_MODE mode: lora auto send mode, refer to RUI.
                 uint16_t app_interval:  the interval time of sending data.(unit:s)
 ***************************************************************************************/
-uint32_t rui_lora_set_send_interval(RUI_LORA_AUTO_SEND_MODE mode,uint16_t interval_time);
+RUI_RETURN_STATUS rui_lora_set_send_interval(RUI_LORA_AUTO_SEND_MODE mode,uint16_t interval_time);
 
 /***************************************************************************************
  * @brief       This API is used to convert region from string to LORA_REGION enum.
@@ -676,34 +719,34 @@ LORA_REGION rui_lora_region_convert(uint8_t *p_buf);
 
 /***************************************************************************************
  * @brief       This API is used to set the region of LoRaWAN you want it to work in.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       LORA_REGION region:     the region of LoRaWAN.
 ***************************************************************************************/
-uint32_t rui_lora_set_region(LORA_REGION region);
+RUI_RETURN_STATUS rui_lora_set_region(LORA_REGION region);
 
 /***************************************************************************************
  * @brief       This API is used to get all status about LoRa.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       bool IsPrint:whether print parameters through serial
                 RUI_LORA_STATUS_T *status:  the status about LoRa.
 ***************************************************************************************/
-uint32_t rui_lora_get_status(bool IsPrint,RUI_LORA_STATUS_T *status);
+RUI_RETURN_STATUS rui_lora_get_status(bool IsPrint,RUI_LORA_STATUS_T *status);
 
 /***************************************************************************************
  * @brief       This API is used to print all channel list about LoRa.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       NULL
 ***************************************************************************************/
-uint32_t rui_get_channel_list(void);
+RUI_RETURN_STATUS rui_get_channel_list(void);
 
 #ifdef SOFTDEVICE_PRESENT
 /***************************************************************************************
  * @brief       This API is used to set the work mode of BLE.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       BLE_WORK_MODE mode:  BLE_MODE_PERIPHERAL, BLE_MODE_CENTRAL, BLE_MODE_OBSERVER
  * @param       long_range_enable: true or false
 ***************************************************************************************/
-uint32_t rui_ble_set_work_mode(BLE_WORK_MODE mode, bool long_range_enable);
+RUI_RETURN_STATUS rui_ble_set_work_mode(BLE_WORK_MODE mode, bool long_range_enable);
 
 /***************************************************************************************
  * @brief       This API is used to get peripherial advertise report.
@@ -717,13 +760,13 @@ void rui_ble_scan_adv(int8_t rssi_value, uint8_t *p_adv_data, uint16_t adv_data_
 
 /***************************************************************************************
  * @brief       This API is used to register ble event callback functions.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       ble_evt_connect:    the callback function for ble connected event.
                 ble_evt_disconnect: the callback function for ble disconnected event.
 ***************************************************************************************/
 typedef void (*ble_evt_connect)(void);
 typedef void (*ble_evt_disconnect)(void);
-uint32_t rui_ble_evt_register_callback(ble_evt_connect callback1, ble_evt_disconnect callback2);
+RUI_RETURN_STATUS rui_ble_evt_register_callback(ble_evt_connect callback1, ble_evt_disconnect callback2);
 
 /***************************************************************************************
  * @brief       This API is used to handle nofify data from ble peripheral.
@@ -743,56 +786,56 @@ void rui_ble_rx_data_read(uint8_t *pdata, uint16_t len);
 
 /***************************************************************************************
  * @brief       This API is used to write data to write_handle which in peripheral via ble.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       BLE_CLIENT * p_ble_rcs_c:  ble_rcs_c instances which is m_rcs_c[i] in multiple link.
                 uint8_t *pdata:  the pointer of transmit data.
                 uint16_t len:  the lengh of transmit data.
 ***************************************************************************************/
-uint32_t rui_ble_tx_data_write(BLE_CLIENT * p_ble_rcs_c, uint8_t *pdata, uint16_t len);
+RUI_RETURN_STATUS rui_ble_tx_data_write(BLE_CLIENT * p_ble_rcs_c, uint8_t *pdata, uint16_t len);
 
 /***************************************************************************************
  * @brief       This API is used to write data to read_notify_handle which in peripheral via ble.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       BLE_CLIENT * p_ble_rcs_c:  ble_rcs_c instances which is m_rcs_c[i] in multiple link.
 ***************************************************************************************/
-uint32_t rui_ble_tx_data_read(BLE_CLIENT * p_ble_rcs_c);
+RUI_RETURN_STATUS rui_ble_tx_data_read(BLE_CLIENT * p_ble_rcs_c);
 #endif
 
 /***************************************************************************************
  * @brief       This API is used to get the current firmware version.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t *version:   the current firmware version.
 ***************************************************************************************/
-uint32_t rui_device_version(uint8_t *version);
+RUI_RETURN_STATUS rui_device_version(uint8_t *version);
 
 /***************************************************************************************
  * @brief       This API is used to reset the device.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       void
 ***************************************************************************************/
-uint32_t rui_device_reset(void);
+RUI_RETURN_STATUS rui_device_reset(void);
 
 /***************************************************************************************
  * @brief       This API is used to let the device go to sleep mode.
- * @return      NULL
+ * @return      RUI_RETURN_STATUS
  * @param       uint32_t on/off: on/off
                 sensor_wakeup,sensor_sleep: app callback
 ***************************************************************************************/
 typedef void (*sensor_wakeup)(void);
 typedef void (*sensor_sleep)(void);
-uint32_t rui_sensor_register_callback(sensor_wakeup callback1,sensor_sleep callback2);
-void rui_device_sleep(uint32_t on);
+RUI_RETURN_STATUS rui_sensor_register_callback(sensor_wakeup callback1,sensor_sleep callback2);
+RUI_RETURN_STATUS rui_device_sleep(uint32_t on);
 
 /***************************************************************************************
  * @brief       This API is used to get the current voltage value of the battery.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       float *voltage: the current voltage value of the battery
 ***************************************************************************************/
-uint32_t rui_device_get_battery_level(float *voltage);
+RUI_RETURN_STATUS rui_device_get_battery_level(float *voltage);
 
 /***************************************************************************************
  * @brief       This API is used to config LoRaP2P parameters.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       Frequency:Frequency in Hz,
                 Spreadfact:Spreadfactare limite to the 6-12 range,
                 Bandwidth:Bandwidth limite to the 0-2 range,
@@ -800,102 +843,102 @@ uint32_t rui_device_get_battery_level(float *voltage);
                 Preamlen:Preamlen limite to the 2-66535 range,
                 Powerdbm:Powerdbm limite to the 0-20 range.
 ***************************************************************************************/
-uint32_t rui_lorap2p_config(uint32_t Frequency,uint8_t  Spreadfact,uint8_t  Bandwidth,uint8_t  Codingrate,uint16_t  Preamlen,uint8_t  Powerdbm);
+RUI_RETURN_STATUS rui_lorap2p_config(uint32_t Frequency,uint8_t  Spreadfact,uint8_t  Bandwidth,uint8_t  Codingrate,uint16_t  Preamlen,uint8_t  Powerdbm);
 
 /***************************************************************************************
  * @brief       This API is used to send data by LoRaP2P mode.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       data: data package,  
                 len:data size.
 ***************************************************************************************/
-uint32_t rui_lorap2p_send(uint8_t* data,uint16_t len);
+RUI_RETURN_STATUS rui_lorap2p_send(uint8_t* data,uint16_t len);
 
 /***************************************************************************************
  * @brief       This API is used to register a callback function for LoRaP2P in application,
                 so that application can receive the LoRa data automatically.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       lora_receive callback:  the callback function for receiving LoRaP2P data.
 ***************************************************************************************/
 typedef void (*lorap2p_receive)(RUI_LORAP2P_RECEIVE_T *data);
-uint32_t rui_lorap2p_register_recv_callback(lorap2p_receive callback);
+RUI_RETURN_STATUS rui_lorap2p_register_recv_callback(lorap2p_receive callback);
 
 /***************************************************************************************
  * @brief       This API is used to register a callback function for LoRaWAN join,
                 so that application can start LoRaWAN function.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       lorajoin callback: the callback function for LoRaWAN join .
                 status: 1 -> join succeed ,0 -> join fail.
 ***************************************************************************************/
 typedef void (*lorajoin)(uint32_t status);
-uint32_t rui_lorajoin_register_callback(lorajoin callback);
+RUI_RETURN_STATUS rui_lorajoin_register_callback(lorajoin callback);
 
 /***************************************************************************************
  * @brief       This API is used to register a callback function for LoRaWAN send complete,
                 so that application can start LoRaWAN function.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       lorasend callback: the callback function for LoRaWAN send complete.
                 RUI_MCPS_T type: send packet type.
 ***************************************************************************************/
 typedef void (*lorasend)(RUI_MCPS_T type);
-uint32_t rui_lorasend_complete_register_callback(lorasend callback);
+RUI_RETURN_STATUS rui_lorasend_complete_register_callback(lorasend callback);
 
 /***************************************************************************************
  * @brief       This API is used to set  lora sending power.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t power_value.<range:0~15 according thr region>
 ***************************************************************************************/
-uint32_t rui_lora_set_tx_power(uint8_t power_value);
+RUI_RETURN_STATUS rui_lora_set_tx_power(uint8_t power_value);
 
 /***************************************************************************************
  * @brief       This API is used to creat and init a timer.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       void *obj:timer instance.
                 void ( *callback )( void ):timer event callback function.
 ***************************************************************************************/
-uint32_t rui_timer_init(void *obj, void ( *callback )( void ));
+RUI_RETURN_STATUS rui_timer_init(void *obj, void ( *callback )( void ));
 
 /***************************************************************************************
  * @brief       This API is used to uninit timer.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       void *obj:timer instance.
 ***************************************************************************************/
-uint32_t rui_timer_uninit(void *obj);
+RUI_RETURN_STATUS rui_timer_uninit(void *obj);
 
 /***************************************************************************************
  * @brief       This API is used to set value for timer.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       void *obj: timer instance.
                 uint32_t value: timer value.
 ***************************************************************************************/
-uint32_t rui_timer_setvalue(void *obj, uint32_t value );
+RUI_RETURN_STATUS rui_timer_setvalue(void *obj, uint32_t value );
 
 /***************************************************************************************
  * @brief       This API is used to start timer.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       void *obj: timer instance.
 ***************************************************************************************/
-uint32_t rui_timer_start(void *obj);
+RUI_RETURN_STATUS rui_timer_start(void *obj);
 
 /***************************************************************************************
  * @brief       This API is used to stop timer.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       void *obj: timer instance.
 ***************************************************************************************/
-uint32_t rui_timer_stop(void *obj);
+RUI_RETURN_STATUS rui_timer_stop(void *obj);
 
 /***************************************************************************************
  * @brief       This API is used to delay time (unit:us).
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint32_t value: delay time value.
 ***************************************************************************************/
-uint32_t rui_delay_us( uint32_t value );
+RUI_RETURN_STATUS rui_delay_us( uint32_t value );
 
 /***************************************************************************************
  * @brief       This API is used to delay time (unit:ms).
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint32_t value: delay time value.
 ***************************************************************************************/
-uint32_t rui_delay_ms( uint32_t value );
+RUI_RETURN_STATUS rui_delay_ms( uint32_t value );
 
 /***************************************************************************************
  * @brief       This API is used to init system.
@@ -920,21 +963,21 @@ void rui_lora_autosend_callback(void);
 
 /***************************************************************************************
  * @brief       This API is flash write and read.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t *str
                 uint8_t len: should less than 128 byte
                 RUI_FLASH_MODE mode: user data or origin data
 ***************************************************************************************/
-uint32_t rui_flash_write(RUI_FLASH_MODE mode, uint8_t *str, uint8_t len);
+RUI_RETURN_STATUS rui_flash_write(RUI_FLASH_MODE mode, uint8_t *str, uint8_t len);
 
 /***************************************************************************************
  * @brief       This API is auto send data timeout callback by lora.
- * @return      SUCCESS or FAIL
+ * @return      RUI_RETURN_STATUS
  * @param       uint8_t *str
                 uint8_t len: should less than 128 byte
                 RUI_FLASH_MODE mode: user data or origin data
 ***************************************************************************************/
-uint32_t rui_flash_read(RUI_FLASH_MODE mode,uint8_t *str, uint8_t len);
+RUI_RETURN_STATUS rui_flash_read(RUI_FLASH_MODE mode,uint8_t *str, uint8_t len);
 
 /***************************************************************************************
  * @brief       This API is used to return info for user defined AT,
@@ -945,6 +988,20 @@ uint32_t rui_flash_read(RUI_FLASH_MODE mode,uint8_t *str, uint8_t len);
                 uint16_t ret_code:user error code
 ***************************************************************************************/
 void  rui_at_response(bool is_success, uint8_t *p_msg, uint16_t ret_code);
+
+/***************************************************************************************
+ * @brief       This API is used to regist external gpio, it may lead to power current 
+                increase. e.g 130uA in nordic platform.
+ * @return      RUI_RETURN_STATUS
+ * @param       bool control: true or false, use it or not.
+                RUI_GPIO_ST st: gpio struct
+                edge: detect in raise or fall
+                pro: priority for interrupt
+                callback: interrupt callback.
+***************************************************************************************/
+typedef void (*interrupt_callback)(void);
+RUI_RETURN_STATUS rui_gpio_interrupt(bool control, RUI_GPIO_ST st, RUI_GPIO_INTERRUPT_EDGE edge, RUI_GPIO_INTERRUPT_PRIORITY pro,interrupt_callback callback);
+
 
 #ifdef SOFTDEVICE_PRESENT
 #define RUI_LOG_PRINTF(fmt, args...)  NRF_LOG_INFO(fmt, ##args)
