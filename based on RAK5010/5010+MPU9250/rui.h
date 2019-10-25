@@ -816,7 +816,7 @@ RUI_RETURN_STATUS rui_device_reset(void);
 typedef void (*sensor_wakeup)(void);
 typedef void (*sensor_sleep)(void);
 RUI_RETURN_STATUS rui_sensor_register_callback(sensor_wakeup callback1,sensor_sleep callback2);
-void rui_device_sleep(uint32_t on);
+RUI_RETURN_STATUS rui_device_sleep(uint32_t on);
 
 /***************************************************************************************
  * @brief       This API is used to get the current voltage value of the battery.
