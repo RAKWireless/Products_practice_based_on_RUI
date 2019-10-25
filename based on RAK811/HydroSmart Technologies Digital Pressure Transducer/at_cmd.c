@@ -1,6 +1,7 @@
 #include "at_cmd.h"
 #include "rui.h"
 
+static RUI_RETURN_STATUS rui_return_status;
 
 struct cli_cmd cli_cmds[] = 
 {
@@ -8,8 +9,7 @@ struct cli_cmd cli_cmds[] =
     "join",           lora_join,
     "get_config",     lora_read_config,
     "set_config",     lora_write_config,
-    "send",           lora_send,
-    "region",         lora_region, 
+    "send",           lora_send, 
     "help",           atcmd_help,  
 };
 
@@ -63,7 +63,6 @@ int at_cmd_process(char *str)
         RUI_LOG_PRINTF("AT format error.\r\n");
         return FAIL;
     }
-    // DUartPrint("[echo cmd:] %s\r\r\n", str0);
     str0 += 3;
     argc = parse_args(str0, argv);
     if (argc > 0) {
@@ -110,21 +109,65 @@ static void out_hex_buf( char *buffer, uint16_t size)
     }
 }
 
+void dump_hex2string(uint8_t *buf , uint8_t len)
+{
+  for(uint8_t i=0; i<len; i++) {
+     RUI_LOG_PRINTF("%02X", buf[i]);
+  }
+   RUI_LOG_PRINTF("\r\n");
+}
+
 bool IsJoiningflag;  //Flag whether is joining LoRaWAN
 static void lora_join(int argc, char *argv[])
 {
+    int8_t status;
     RUI_LORA_STATUS_T app_lora_status;
     rui_lora_get_status(false,&app_lora_status);     
     if(argv[1] == NULL)
     {
-        if(rui_lora_join() != 0)return;
+        if(app_lora_status.join_mode == RUI_OTAA)
+        {
+            RUI_LOG_PRINTF("OTAA:\r\n");
+			RUI_LOG_PRINTF("DevEui:");
+            dump_hex2string(app_lora_status.dev_eui, 8);
+			RUI_LOG_PRINTF("AppEui:");
+			dump_hex2string(app_lora_status.app_eui , 8);
+			RUI_LOG_PRINTF("AppKey:");
+			dump_hex2string(app_lora_status.app_key, 16);
+            RUI_LOG_PRINTF("OTAA Join Start... \r\n"); 
+            RUI_LOG_PRINTF("OK\r\n");
+            IsJoiningflag = true;            
+            status = rui_lora_join();
+            switch(rui_return_status)
+            {
+                case RUI_STATUS_OK:break ;
+                case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("Parameter not found.\r\n");
+                    break;
+                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                    break;
+            } 
+        }
         else if(app_lora_status.join_mode == RUI_ABP)
         {
-            LoRaWANJoined_callback(1);
+            RUI_LOG_PRINTF("ABP: \r\n");
+			RUI_LOG_PRINTF("DevAddr: %08X\r\n", app_lora_status.dev_addr);
+			RUI_LOG_PRINTF("AppsKey: ");
+			dump_hex2string(app_lora_status.apps_key , 16);    
+			RUI_LOG_PRINTF("NwksKey: ");
+			dump_hex2string(app_lora_status.nwks_key , 16);
+            status = rui_lora_join();
+            switch(rui_return_status)
+            {
+                case RUI_STATUS_OK:LoRaWANJoined_callback(1);break ;
+                case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("Parameter not found.\r\n");
+                    break;
+                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                    break;
+            }           
         }else 
         {
-            RUI_LOG_PRINTF("OK\r\n");
-            IsJoiningflag = true;
+             RUI_LOG_PRINTF("Parameter format error.\r\n");
+            return ;
         }
     }
     else
@@ -142,7 +185,7 @@ static void lora_version(int argc, char *argv[])
     RUI_LOG_PRINTF("OK%s\r\n", version);
 }
 
-static LORA_REGION rw_String2Region(char* region)
+LORA_REGION rw_String2Region(char* region)
 {
   if ( 0==strcmp(region, "AS923")) {
      return AS923;
@@ -169,69 +212,25 @@ static LORA_REGION rw_String2Region(char* region)
   }
 }
 
-static void lora_region(int argc, char *argv[])
-{
-    LORA_REGION region;
-    RUI_LORA_STATUS_T app_lora_status;
-    rui_lora_get_status(false,&app_lora_status);
-    if (argc == 1) 
-    {
-        RUI_LOG_PRINTF("OK.%s\r\n", app_lora_status.region);
-        return;
-    } 
-    else if (argc == 2) 
-    {
-        if ( 0==strcmp(argv[1], app_lora_status.region)) 
-        { 
-            RUI_LOG_PRINTF("OK.\r\n");
-        } 
-        else 
-        {	
-            region = rw_String2Region(argv[1]);
-            if (region == 100) 
-            {
-                RUI_LOG_PRINTF("No region found.\r\n");;
-                return;
-            }
-            else return rui_lora_set_region(region);
-        }
-
-    } else
-    {
-        RUI_LOG_PRINTF("Parameter format error.\r\n");
-    }
-   
-}
-
 
 static void lora_read_config(int argc, char *argv[])
 {
-    int ret;
-    if (argc != 2) {
+    if (argc != 2) 
+    {
         RUI_LOG_PRINTF("Parameter format error.\r\n");
         return;
     }
     
-    ret = read_config(argv[1]);
-    if (ret != SUCCESS) {
-        return;
-    } 
+    read_config(argv[1]);
 }
 
 static void lora_write_config(int argc, char *argv[])
 {
-    int ret; 
     if (argc < 2) {
         RUI_LOG_PRINTF("Parameter format error.\r\n");
         return;
-    }
-    
-    ret = write_config(argv[1]);
-    if (ret != SUCCESS) {
-        return ;
-    } else {
-        RUI_LOG_PRINTF("OK\r\n");
-    }
+    }    
+    write_config(argv[1]);   
 }
 uint8_t* send_data;
 static void lora_send(int argc, char *argv[])
@@ -279,8 +278,16 @@ static void lora_send(int argc, char *argv[])
         send_data=argv[3]; 
         app_len = strlen(argv[3]);  
 
-        rui_uart_send(atoi(argv[2]),send_data,app_len); 
-        RUI_LOG_PRINTF("\r\nUart%d send OK\r\n",atoi(argv[2]));   
+        rui_return_status = rui_uart_send(atoi(argv[2]),send_data,app_len); 
+        switch(rui_return_status)
+        {
+            case RUI_STATUS_OK:RUI_LOG_PRINTF("\r\nUart%d send OK\r\n",atoi(argv[2])); 
+                break;
+            case RUI_STATUS_UART_SEND_ERROR:RUI_LOG_PRINTF("uart send error.\r\n");
+                return FAIL;
+            default :RUI_LOG_PRINTF("Parameter is invalid.\r\n");
+        }
+          
     }
     else if(app_lora_status.work_mode == RUI_P2P)
     {
@@ -362,11 +369,17 @@ static void lora_send(int argc, char *argv[])
             memcpy(hex_num, &send_data[i*2], 2);
             send_data[i] = strtoul(hex_num, NULL, 16);
         } 
-        if(rui_lora_send(atoi(argv[2]),&send_data[0],app_len) != SUCCESS )
+
+        rui_return_status = rui_lora_send(atoi(argv[2]),&send_data[0],app_len);
+        switch(rui_return_status)
         {
-            return FAIL;
+            case RUI_STATUS_OK:RUI_LOG_PRINTF("OK\r\n");break;
+            case RUI_LORA_STATUS_NO_NETWORK_JOINED:RUI_LOG_PRINTF("Network not joined.\r\n");break;
+            case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is invalid.\r\n");
+                break;
+            default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                break;
         } 
-        RUI_LOG_PRINTF("OK\r\n");
         return;
     }else
     {
