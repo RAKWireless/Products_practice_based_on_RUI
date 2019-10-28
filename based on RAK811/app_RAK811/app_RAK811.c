@@ -86,11 +86,14 @@ void app_loop(void)
                 sensor_data_cnt=0;                       
             }	
             else 
-            {
-                RUI_LOG_PRINTF("No Sensor data detect.\n");  
+            {                
                 if(app_lora_status.autosend_status)
-                {                    
+                { 
+                    RUI_LOG_PRINTF("No Sensor data detect.\n");                     
                     rui_lora_set_send_interval(RUI_AUTO_ENABLE_NORMAL,app_lora_status.lorasend_interval);  //start autosend_timer after send success                       
+                }else
+                {
+                    rui_lora_set_send_interval(RUI_AUTO_DISABLE,0);  //stop it auto send data
                 }
             }
         }
@@ -99,11 +102,10 @@ void app_loop(void)
         IsJoiningflag = true;
         if(app_lora_status.join_mode == RUI_OTAA)
         {
-            RUI_LOG_PRINTF("OTAA Join Start...\r\n");
             rui_return_status = rui_lora_join();
             switch(rui_return_status)
             {
-                case RUI_STATUS_OK:break;
+                case RUI_STATUS_OK:RUI_LOG_PRINTF("OTAA Join Start...\r\n");break;
                 case RUI_LORA_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is not found.\r\n");
                     rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
                     rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after join failed
@@ -271,11 +273,11 @@ void main(void)
 /*******************************************************************************************    
  *The query gets the current status 
  * 
- * *****************************************************************************************/    
+ * *****************************************************************************************/ 
     rui_lora_get_status(false,&app_lora_status);
     autosendtemp_status = app_lora_status.autosend_status;
 
-	RUI_LOG_PRINTF("autosend_interval: %us\r\n", app_lora_status.lorasend_interval);
+	if(app_lora_status.autosend_status)RUI_LOG_PRINTF("autosend_interval: %us\r\n", app_lora_status.lorasend_interval);
 
 /*******************************************************************************************    
  *Init OK ,print board status and auto join LoRaWAN
