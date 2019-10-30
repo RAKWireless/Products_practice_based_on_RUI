@@ -396,15 +396,6 @@ void rui_uart_recv(RUI_UART_DEF uart_def, uint8_t *pdata, uint16_t len);
 RUI_RETURN_STATUS rui_uart_mode_config(RUI_UART_DEF uart_def,RUI_UART_MODE uart_mode);
 
 /***************************************************************************************
- * @brief       This API is used to remap tx/rx pin.
-                Applicable only to RAK4600 with official expansion board
- * @return      RUI_RETURN_STATUS
- * @param       bool mode: true-USB_MODE, false-Module_Mode
-                Default is Module_Mode, this setting restores the default after restart.
-***************************************************************************************/
-RUI_RETURN_STATUS rui_uart_pin_mode_change(bool mode);
-
-/***************************************************************************************
  * @brief       This API is used to configure gpio.
  * @return      RUI_RETURN_STATUS
  * @param       RUI_GPIO_ST *rui_gpio:the instance of gpio.

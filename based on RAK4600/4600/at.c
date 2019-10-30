@@ -580,34 +580,6 @@ void at_parse(char *cmd)
         return;
     }
 
-    // at+set_config=uart:work_mode:x
-    if (strstr(cmd, "at+set_config=uart:work_mode:")!=NULL)
-    {
-        ptr = NULL;
-        ptr = strstr(cmd, "work_mode:");
-        ptr += 10;
-
-
-        if (at_flag & AT_BLE_MASK)
-        {
-            if (*ptr == '1')
-            {
-                rui_uart_pin_mode_change(true);
-            }
-            else
-            {
-                rui_uart_pin_mode_change(false);
-            }
-            rui_at_response(true, "Uart mode set succes.", RAK_OK);
-        }
-        else
-        {
-            rui_at_response(false, "This command only supports BLE.\r\n", RAK_ERROR);
-        }
-
-        return ;
-    }
-    
     // at+set_config=device:uart_mode:X:Y
     if (strstr(cmd, "at+set_config=device:uart_mode:")!=NULL)
     {
