@@ -305,7 +305,6 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T status)
         case RUI_MCPS_CONFIRMED:
         {
             RUI_LOG_PRINTF("[LoRa]: Confirm data send OK\r\n");
-
             break;
         }
         case RUI_MCPS_PROPRIETARY:
@@ -357,30 +356,29 @@ void main(void)
 
     rui_init();
     bsp_init();
-
-/*******************************************************************************************
- * Register LoRaMac callback function
- * 
- * *****************************************************************************************/
+    
+    /*******************************************************************************************
+     * Register LoRaMac callback function
+     * 
+     * *****************************************************************************************/
     rui_lora_register_recv_callback(LoRaReceive_callback);  
     rui_lorap2p_register_recv_callback(LoRaP2PReceive_callback);
     rui_lorajoin_register_callback(LoRaWANJoined_callback); 
     rui_lorasend_complete_register_callback(LoRaWANSendsucceed_callback); 
 
-
-/*******************************************************************************************    
- *The query gets the current status 
- * 
- * *****************************************************************************************/ 
+    /*******************************************************************************************    
+     *The query gets the current status 
+    * 
+    * *****************************************************************************************/ 
     rui_lora_get_status(false,&app_lora_status);
     autosendtemp_status = app_lora_status.autosend_status;
 
 	if(app_lora_status.autosend_status)RUI_LOG_PRINTF("autosend_interval: %us\r\n", app_lora_status.lorasend_interval);
 
-/*******************************************************************************************    
- *Init OK ,print board status and auto join LoRaWAN
- * 
- * *****************************************************************************************/  
+    /*******************************************************************************************    
+     *Init OK ,print board status and auto join LoRaWAN
+    * 
+    * *****************************************************************************************/  
     switch(app_lora_status.work_mode)
 	{
 		case RUI_LORAWAN:
@@ -442,11 +440,8 @@ void main(void)
                     }       
                 }
 
-                if(app_lora_status.EnableSleep)  //enter sleep mode
-                {                      
-                    rui_device_sleep(1); 
-                } 
                 app_loop();
+				
                 break;
             case RUI_P2P:
                 /*************************************************************************************
