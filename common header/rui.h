@@ -760,6 +760,13 @@ RUI_RETURN_STATUS rui_ble_set_work_mode(BLE_WORK_MODE mode, bool long_range_enab
 void rui_ble_scan_adv(int8_t rssi_value, uint8_t *p_adv_data, uint16_t adv_data_len, uint8_t *p_device_mac);
 
 /***************************************************************************************
+ * @brief       This API is used to start advertising in ble peripheral mode.
+ * @return      NULL
+ * @param       NULL
+***************************************************************************************/
+void rui_ble_advertising_start(void);
+
+/***************************************************************************************
  * @brief       This API is used to register ble event callback functions.
  * @return      RUI_RETURN_STATUS
  * @param       ble_evt_connect:    the callback function for ble connected event.
