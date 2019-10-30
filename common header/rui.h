@@ -761,6 +761,7 @@ void rui_ble_scan_adv(int8_t rssi_value, uint8_t *p_adv_data, uint16_t adv_data_
 
 /***************************************************************************************
  * @brief       This API is used to start advertising in ble peripheral mode.
+                BLE broadcast will stop automatically after 60 seconds.
  * @return      NULL
  * @param       NULL
 ***************************************************************************************/
