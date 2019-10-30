@@ -5,7 +5,6 @@ static RUI_RETURN_STATUS rui_return_status;
 //join cnt
 #define JOIN_MAX_CNT 6
 static uint8_t JoinCnt=0;
-static bool IsTxDone = false;   //Entry sleep flag
 RUI_LORA_STATUS_T app_lora_status; //record status 
 
 /*******************************************************************************************
@@ -75,7 +74,6 @@ void app_loop(void)
                         switch(app_lora_status.autosend_status)
                         {
                             case RUI_AUTO_ENABLE_SLEEP:rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after send success
-                                IsTxDone=true;  //Sleep flag set true
                                 break;
                             case RUI_AUTO_ENABLE_NORMAL:rui_lora_set_send_interval(RUI_AUTO_ENABLE_NORMAL,app_lora_status.lorasend_interval);  //start autosend_timer after send success
                                 break;
@@ -87,14 +85,7 @@ void app_loop(void)
             }	
             else 
             {                
-                if(app_lora_status.autosend_status)
-                { 
-                    RUI_LOG_PRINTF("No Sensor data detect.\n");                     
-                    rui_lora_set_send_interval(RUI_AUTO_ENABLE_NORMAL,app_lora_status.lorasend_interval);  //start autosend_timer after send success                       
-                }else
-                {
-                    rui_lora_set_send_interval(RUI_AUTO_DISABLE,0);  //stop it auto send data
-                }
+                rui_lora_set_send_interval(RUI_AUTO_DISABLE,0);  //stop it auto send data if no sensor data.
             }
         }
     }else if(IsJoiningflag == false)
@@ -108,13 +99,25 @@ void app_loop(void)
                 case RUI_STATUS_OK:RUI_LOG_PRINTF("OTAA Join Start...\r\n");break;
                 case RUI_LORA_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is not found.\r\n");
                     rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
-                    rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after join failed
-                    IsTxDone=true;  //Sleep flag set true
+                    switch(app_lora_status.autosend_status)
+                    {
+                        case RUI_AUTO_ENABLE_SLEEP:rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after send success
+                            break;
+                        case RUI_AUTO_ENABLE_NORMAL:rui_lora_set_send_interval(RUI_AUTO_ENABLE_NORMAL,app_lora_status.lorasend_interval);  //start autosend_timer after send success
+                            break;
+                        default:break;
+                    } 
                     break;
                 default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
-                    rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
-                    rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after join failed
-                    IsTxDone=true;  //Sleep flag set true
+                    rui_lora_get_status(false,&app_lora_status); 
+                    switch(app_lora_status.autosend_status)
+                    {
+                        case RUI_AUTO_ENABLE_SLEEP:rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after send success
+                            break;
+                        case RUI_AUTO_ENABLE_NORMAL:rui_lora_set_send_interval(RUI_AUTO_ENABLE_NORMAL,app_lora_status.lorasend_interval);  //start autosend_timer after send success
+                            break;
+                        default:break;
+                    }
                     break;
             }            
         }
@@ -182,9 +185,15 @@ void LoRaWANJoined_callback(uint32_t status)
         else   //Join failed
         {
             RUI_LOG_PRINTF("[LoRa]:Joined Failed! \r\n"); 
-			rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
-			rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after send success
-			IsTxDone=true;  //Sleep flag set true
+			rui_lora_get_status(false,&app_lora_status); 
+            switch(app_lora_status.autosend_status)
+            {
+                case RUI_AUTO_ENABLE_SLEEP:rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after send success
+                    break;
+                case RUI_AUTO_ENABLE_NORMAL:rui_lora_set_send_interval(RUI_AUTO_ENABLE_NORMAL,app_lora_status.lorasend_interval);  //start autosend_timer after send success
+                    break;
+                default:break;
+            }
             JoinCnt=0;   
         }          
     }    
@@ -201,7 +210,6 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T status)
         case RUI_MCPS_CONFIRMED:
         {
             RUI_LOG_PRINTF("[LoRa]: Confirm data send OK\r\n");
-
             break;
         }
         case RUI_MCPS_PROPRIETARY:
@@ -222,7 +230,6 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T status)
     {
         case RUI_AUTO_ENABLE_SLEEP:rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after send success
             rui_delay_ms(5);  
-            IsTxDone=true;  //Sleep flag set true
             break;
         case RUI_AUTO_ENABLE_NORMAL:rui_lora_set_send_interval(RUI_AUTO_ENABLE_NORMAL,app_lora_status.lorasend_interval);  //start autosend_timer after send success
             break;
@@ -334,25 +341,23 @@ void main(void)
                 if(autosendtemp_status != app_lora_status.autosend_status) 
                 {
                     autosendtemp_status = app_lora_status.autosend_status;
-                    if(autosendtemp_status == false)
+                    if(autosendtemp_status == RUI_AUTO_DISABLE)
                     {
-                        autosendtemp_status = app_lora_status.autosend_status;
-                        rui_lora_set_send_interval(RUI_AUTO_DISABLE,0);  //stop auto send data 
-                        autosend_flag=false;
+                        rui_lora_set_send_interval(RUI_AUTO_DISABLE,0);  //stop auto send data
+                        autosend_flag = false; 
                     }else
                     {
-                        autosend_flag=true;    
-                    }          
+                        autosend_flag = true;
+                    }
+                            
                 }
 
-                if(IsTxDone)
-                {
-                    
-                    rui_device_sleep(1); 
-					IsTxDone=false;                
-                }  
+                app_loop(); 
 
-                app_loop();  
+                if(app_lora_status.EnableSleep)  //enter sleep mode
+                {                    
+                    rui_device_sleep(1);              
+                }   
 
                 break;
             case RUI_P2P:

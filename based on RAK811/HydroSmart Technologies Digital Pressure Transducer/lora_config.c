@@ -256,7 +256,7 @@ static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *
     {
         case restart:
             RUI_LOG_PRINTF("OK,restart ...\r\n");
-            rui_delay_ms(100);
+            rui_delay_ms(10);
             rui_device_reset();
             break;
         case sleep:
@@ -264,25 +264,17 @@ static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *
             {
                 RUI_LOG_PRINTF("parameter is invalid.\r\n");
                 return FAIL ;
-            }
-            if(atoi(argv[1]) <= 2)
+            }            
+            rui_return_status = rui_device_sleep(atoi(argv[1]));
+            switch(rui_return_status)
             {
-                rui_return_status = rui_device_sleep(atoi(argv[1]));
-                switch(rui_return_status)
-                {
-                    case RUI_STATUS_OK:
-                        RUI_LOG_PRINTF("wake up.\r\n");
-                        return SUCCESS;
-                    case RUI_LORA_STATUS_BUSY:
-                        RUI_LOG_PRINTF("radio status is busy,can't sleep.\r\n");
-                        return FAIL;
-                    default: RUI_LOG_PRINTF("unknown error.\r\n");return FAIL;
-                } 
-            }else 
-            {
-                RUI_LOG_PRINTF("Parameter is invalid.\r\n");
-                return FAIL ;
-            }
+                case RUI_STATUS_OK:
+                    return SUCCESS;
+                case RUI_LORA_STATUS_BUSY:
+                    RUI_LOG_PRINTF("radio status is busy,can't sleep.\r\n");
+                    return FAIL;
+                default: RUI_LOG_PRINTF("Parameter is invalid.\r\n");return FAIL;
+            }            
             break; 
         case boot:
             RUI_LOG_PRINTF("Work in Boot mode now...\r\n");
@@ -530,7 +522,7 @@ static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *
             break;
         case status:handle_device_status();
             break;
-        default :RUI_LOG_PRINTF("Parameter is invalid.\r\n");return FAIL ;
+        default :RUI_LOG_PRINTF("Parameter is invalid.\r\n");return FAIL;
             break;
     }
     return SUCCESS;

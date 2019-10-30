@@ -265,6 +265,7 @@ typedef struct RUI_LORA_STATUS
     uint8_t confirm;
     uint16_t lorasend_interval;
     uint8_t autosend_status;
+    bool EnableSleep;
     bool IsJoined;
     bool AdrEnable;
     uint8_t region[5]; //region string e.g:"EU868"
