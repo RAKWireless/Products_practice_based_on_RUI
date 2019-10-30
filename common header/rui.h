@@ -34,6 +34,8 @@ typedef enum{
  RUI_STATUS_GPIO_IRQ_DISABLE,
  RUI_STATUS_BUS_INIT_FAIL,
  RUI_STATUS_TIMER_FAIL,
+ RUI_STATUS_IIC_RW_ERROR,
+ RUI_STATUS_UART_SEND_ERROR,
  
  RUI_SENSOR_STATUS_OK=20,
 
@@ -251,6 +253,12 @@ typedef enum RUI_IF_READ_WRITE
 
 typedef struct RUI_LORA_STATUS
 {
+    uint32_t dev_addr;
+    uint8_t dev_eui[8];
+    uint8_t app_eui[8];
+    uint8_t app_key[16];
+    uint8_t nwks_key[16];
+    uint8_t apps_key[16];
     RUI_LORA_WORK_MODE work_mode;
     RUI_LORA_CLASS_MODE class_status;
     RUI_LORA_JOIN_MODE join_mode;
