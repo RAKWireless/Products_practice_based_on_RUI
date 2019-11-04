@@ -520,7 +520,7 @@ void at_parse(char *cmd)
         if(atoi(sleep_data)<30)
         {
             RUI_LOG_PRINTF("send interval should not be less than 30 s !!!!");
-            rui_at_response(false, "send interval should not be less than 30 s.\r\n", RAK_PARAM_ERROR)
+            rui_at_response(false, "send interval should not be less than 30 s.\r\n", RAK_PARAM_ERROR);
             return;
         }
         sleep_period = atoi(sleep_data) * 1000;
