@@ -10,6 +10,7 @@
 
 // rui return code
 #define RAK_OK					0x00	//	0000 0000
+#define RAK_PARAM_ERROR         0x10	//	0000 0000
 #define RAK_ERROR				0x80	//	1000 0000
 #define READ_FLASH_FAIL			0x81	//	1000 0001
 #define WRITE_FLASH_FAIL		0x82	//  1000 0010

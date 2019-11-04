@@ -184,7 +184,7 @@ void at_parse(char *cmd)
             index++;
         }
         err_code = rui_lora_set_dev_eui(dev_eui);
-        if (err_code != 0) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
+        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
         else { rui_at_response(true, msg_flash_success, RAK_OK); }
         return;
     }
@@ -212,7 +212,7 @@ void at_parse(char *cmd)
             index++;
         }
         err_code = rui_lora_set_app_eui(app_eui);
-        if (err_code != 0) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
+        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
         else { rui_at_response(true, msg_flash_success, RAK_OK); }
         return;
     }
@@ -240,7 +240,7 @@ void at_parse(char *cmd)
             index++;
         }
         err_code = rui_lora_set_app_key(app_key);
-        if (err_code != 0) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
+        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
         else { rui_at_response(true, msg_flash_success, RAK_OK); }
         return;
     }
@@ -265,7 +265,7 @@ void at_parse(char *cmd)
 
         }
         err_code = rui_lora_set_dev_addr(lora_config_data);
-        if (err_code != 0) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
+        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
         else { rui_at_response(true, msg_flash_success, RAK_OK); }
         return;
     }
@@ -293,7 +293,7 @@ void at_parse(char *cmd)
             index++;
         }
         err_code = rui_lora_set_apps_key(appskey);
-        if (err_code != 0) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
+        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
         else { rui_at_response(true, msg_flash_success, RAK_OK); }
         return;
     }
@@ -321,7 +321,7 @@ void at_parse(char *cmd)
             index++;
         }
         err_code = rui_lora_set_nwks_key(nwkskey);
-        if (err_code != 0) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
+        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
         else { rui_at_response(true, msg_flash_success, RAK_OK); }
         return;
     }
@@ -336,7 +336,7 @@ void at_parse(char *cmd)
 
         region = rui_lora_region_convert(ptr);
         err_code = rui_lora_set_region(region);
-        if (err_code != 0) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
+        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
         else { rui_at_response(true, msg_flash_success, RAK_OK); }
         return;
     }
@@ -357,7 +357,7 @@ void at_parse(char *cmd)
         }
 
         err_code = rui_lora_set_join_mode(join_mode);
-        if (err_code != 0) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
+        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
         else { rui_at_response(true, msg_flash_success, RAK_OK); }
         return;
     }
@@ -420,7 +420,7 @@ void at_parse(char *cmd)
         {}
 
         err_code = rui_lora_set_work_mode(work_mode);
-        if (err_code != 0) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
+        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
         else { rui_at_response(true, msg_flash_success, RAK_OK); }
         return;
     }
@@ -453,7 +453,7 @@ void at_parse(char *cmd)
             class = 0;
         }
         err_code = rui_lora_set_class(class);
-        if (err_code != 0) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
+        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
         else { rui_at_response(true, msg_flash_success, RAK_OK); }
         return;
     }
@@ -480,7 +480,7 @@ void at_parse(char *cmd)
         else
         {}
         err_code = rui_lora_set_confirm(confirm);
-        if (err_code != 0) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
+        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
         else { rui_at_response(true, msg_flash_success, RAK_OK); }
         return;
     }
@@ -520,13 +520,14 @@ void at_parse(char *cmd)
         if(atoi(sleep_data)<30)
         {
             RUI_LOG_PRINTF("send interval should not be less than 30 s !!!!");
+            rui_at_response(false, "send interval should not be less than 30 s.\r\n", RAK_PARAM_ERROR)
             return;
         }
         sleep_period = atoi(sleep_data) * 1000;
         RUI_LOG_PRINTF("g_rui_cfg_t.sleep_enable = %d",mode);
         RUI_LOG_PRINTF("g_rui_cfg_t.sleep_period = %d",sleep_period);
         err_code = rui_lora_set_send_interval(mode, sleep_period);
-        if (err_code != 0) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
+        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
         else { rui_at_response(true, msg_flash_success, RAK_OK); }
         return;
     }
@@ -635,7 +636,7 @@ void at_parse(char *cmd)
         RUI_LOG_PRINTF("g_rui_cfg_t.g_ble_cfg_t.work_mode = %d", work_mode);
         RUI_LOG_PRINTF("g_rui_cfg_t.g_ble_cfg_t.long_range_enable = %d", long_range_enable);
         err_code = rui_ble_set_work_mode(work_mode, long_range_enable);
-        if (err_code != 0) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
+        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
         else { rui_at_response(true, msg_flash_success, RAK_OK); }
         return;
     }
