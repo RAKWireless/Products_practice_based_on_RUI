@@ -439,6 +439,7 @@ static void atcmd_help(int argc, char *argv[])
 
     RUI_LOG_PRINTF("Sensor AT commands:\r\n"); 
     RUI_LOG_PRINTF("  at+set_config=device:gps_timeout:X\r\n");
+    RUI_LOG_PRINTF("  at+set_config=device:gps_format:X\r\n");
 
 
     RUI_LOG_PRINTF("===================List End======================\r\n");

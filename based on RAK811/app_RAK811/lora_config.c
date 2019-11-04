@@ -315,7 +315,8 @@ static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *
                 rui_return_status = rui_uart_init(atoi(argv[1]),br);
                 switch(rui_return_status)
                 {
-                    case RUI_STATUS_OK:RUI_LOG_PRINTF("OK,The UART%d baud rate switch to %d.\r\n",atoi(argv[1]),br);
+                    case RUI_STATUS_OK:
+                        RUI_LOG_PRINTF("OK.\r\n");
                         return SUCCESS;
                     case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("Parameter is invalid.\r\n");
                         return FAIL;

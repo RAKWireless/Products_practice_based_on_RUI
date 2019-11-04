@@ -40,6 +40,7 @@ typedef enum
 *  The following AT_cmd are user customizations
 ******************************************************/
     gps_timeout,
+    gps_format
 /**************** customizations end ******************/
 }board_config_Enum;
 

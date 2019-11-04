@@ -315,7 +315,8 @@ static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *
                 rui_return_status = rui_uart_init(atoi(argv[1]),br);
                 switch(rui_return_status)
                 {
-                    case RUI_STATUS_OK:RUI_LOG_PRINTF("OK,The UART%d baud rate switch to %d.\r\n",atoi(argv[1]),br);
+                    case RUI_STATUS_OK:
+                        RUI_LOG_PRINTF("OK.\r\n");
                         return SUCCESS;
                     case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("Parameter is invalid.\r\n");
                         return FAIL;
@@ -346,6 +347,7 @@ static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *
                                 case RUI_UART_UNVARNISHED:RUI_LOG_PRINTF("Current AT uart work mode:unvarnished transmit mode\r\n");
                                     break;   
                             }
+                        break;
                     case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("uart_mode is invalid.\r\n");
                         return FAIL;
                 }
@@ -369,6 +371,7 @@ static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *
                 switch(rui_return_status)
                 {
                     case RUI_STATUS_OK:RUI_LOG_PRINTF("OK,pin level is:%d\r\n", pinVal);
+                        break;
                     case RUI_STATUS_PARAMETER_INVALID:
                         RUI_LOG_PRINTF("parameter is invalid.\r\n");
                         return FAIL ;
@@ -594,16 +597,6 @@ static uint32_t handle_lora_config(RUI_LORA_STATUS_T *config, int argc, char *ar
                     switch(rui_return_status)
                     {
                         case RUI_STATUS_OK:	RUI_LOG_PRINTF("Band switch success.\r\n");
-                            rui_lora_get_status(false,&app_lora_status);//The query gets the current status 
-                            if(app_lora_status.work_mode == RUI_LORAWAN) 
-                            {
-                                RUI_LOG_PRINTF("Join Start...\r\n");
-                                if(rui_lora_join() != RUI_STATUS_OK)
-                                {				
-                                    rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
-                                    rui_lora_set_send_interval(1,app_lora_status.lorasend_interval);  //start autosend_timer after join failed
-                                }
-                            }
                             return SUCCESS;
                         case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is invalid.\r\n");
                             return FAIL;
@@ -772,7 +765,8 @@ static uint32_t handle_lora_config(RUI_LORA_STATUS_T *config, int argc, char *ar
                             break;
                         default: RUI_LOG_PRINTF("Parameter is invalid.\r\n");
                             return FAIL;
-                    } 
+                    }
+                    break; 
                 case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is invalid.\r\n");
                     return FAIL;
                 default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);

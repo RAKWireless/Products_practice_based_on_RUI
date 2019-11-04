@@ -115,9 +115,11 @@ void bsp_i2c_init(void)
 void bsp_init(void)
 {
     rui_flash_read(RUI_FLASH_USER,&user_store_data,sizeof(user_store_data));  //Init user data from flash
-    if(user_store_data.gps_timeout_cnt == 0)
+    if(USER_MAGIC_WORD != user_store_data.magic_word)
     {
+        user_store_data.magic_word = USER_MAGIC_WORD;
         user_store_data.gps_timeout_cnt = 100;  //set default gps search satellite timer:100s
+        user_store_data.gps_format = POINT_BIT4;
         if(rui_flash_write(RUI_FLASH_USER,&user_store_data,sizeof(user_store_data)) == RUI_STATUS_PARAMETER_INVALID )
         {
             RUI_LOG_PRINTF("the length over size.\r\n");
@@ -146,17 +148,40 @@ void app_loop(void)
             rui_delay_ms(5);               
             if(GPS_get_data(&bsp_sensor.latitude,&bsp_sensor.longitude,&bsp_sensor.altitude) == 0)
             {
-                a[sensor_data_cnt++]=0x01;  //11bytes
-                a[sensor_data_cnt++]=0x88;
-                a[sensor_data_cnt++]=((int32_t) (bsp_sensor.latitude * 10000) >> 16) & 0xFF;
-                a[sensor_data_cnt++]=((int32_t) (bsp_sensor.latitude * 10000) >> 8) & 0xFF;
-                a[sensor_data_cnt++]=((int32_t) (bsp_sensor.latitude * 10000)) & 0xFF;
-                a[sensor_data_cnt++]=((int32_t) (bsp_sensor.longitude * 10000) >> 16) & 0xFF;
-                a[sensor_data_cnt++]=((int32_t) (bsp_sensor.longitude * 10000) >> 8) & 0xFF;
-                a[sensor_data_cnt++]=((int32_t) (bsp_sensor.longitude * 10000)) & 0xFF;
-                a[sensor_data_cnt++]=((int32_t)(bsp_sensor.altitude* 10) >> 16) & 0xFF;
-                a[sensor_data_cnt++]=((int32_t)(bsp_sensor.altitude* 10) >> 8) & 0xFF;
-                a[sensor_data_cnt++]=((int32_t)(bsp_sensor.altitude* 10)) & 0xFF;
+                switch(user_store_data.gps_format)
+                {
+                    case POINT_BIT4:  //standard LPP
+                        a[sensor_data_cnt++]=0x01;  //11bytes
+                        a[sensor_data_cnt++]=0x88;
+                        a[sensor_data_cnt++]=((int32_t)(bsp_sensor.latitude * 10000) >> 16) & 0xFF;
+                        a[sensor_data_cnt++]=((int32_t)(bsp_sensor.latitude * 10000) >> 8) & 0xFF;
+                        a[sensor_data_cnt++]=((int32_t)(bsp_sensor.latitude * 10000)) & 0xFF;
+                        a[sensor_data_cnt++]=((int32_t)(bsp_sensor.longitude * 10000) >> 16) & 0xFF;
+                        a[sensor_data_cnt++]=((int32_t)(bsp_sensor.longitude * 10000) >> 8) & 0xFF;
+                        a[sensor_data_cnt++]=((int32_t)(bsp_sensor.longitude * 10000)) & 0xFF;
+                        a[sensor_data_cnt++]=((int32_t)(bsp_sensor.altitude* 10) >> 16) & 0xFF;
+                        a[sensor_data_cnt++]=((int32_t)(bsp_sensor.altitude* 10) >> 8) & 0xFF;
+                        a[sensor_data_cnt++]=((int32_t)(bsp_sensor.altitude* 10)) & 0xFF;
+
+                        break;
+                    case POINT_BIT6:
+                        a[sensor_data_cnt++]=0x01;  //14byte
+                        a[sensor_data_cnt++]=0x88;
+                        a[sensor_data_cnt++]=((int32_t) (bsp_sensor.latitude * 1000000) >> 24) & 0xFF;
+                        a[sensor_data_cnt++]=((int32_t) (bsp_sensor.latitude * 1000000) >> 16) & 0xFF;
+                        a[sensor_data_cnt++]=((int32_t) (bsp_sensor.latitude * 1000000) >> 8) & 0xFF;
+                        a[sensor_data_cnt++]=((int32_t) (bsp_sensor.latitude * 1000000)) & 0xFF;
+                        a[sensor_data_cnt++]=((int32_t) (bsp_sensor.longitude * 1000000) >> 24) & 0xFF;
+                        a[sensor_data_cnt++]=((int32_t) (bsp_sensor.longitude * 1000000) >> 16) & 0xFF;
+                        a[sensor_data_cnt++]=((int32_t) (bsp_sensor.longitude * 1000000) >> 8) & 0xFF;
+                        a[sensor_data_cnt++]=((int32_t) (bsp_sensor.longitude * 1000000)) & 0xFF;
+                        a[sensor_data_cnt++]=((int32_t)(bsp_sensor.altitude * 10) >> 24) & 0xFF;
+                        a[sensor_data_cnt++]=((int32_t)(bsp_sensor.altitude * 10) >> 16) & 0xFF;
+                        a[sensor_data_cnt++]=((int32_t)(bsp_sensor.altitude * 10) >> 8) & 0xFF;
+                        a[sensor_data_cnt++]=((int32_t)(bsp_sensor.altitude * 10)) & 0xFF;
+                        break;
+                    default :break;
+                }                
             }
 
             BoardBatteryMeasureVolage(&bsp_sensor.voltage);

@@ -278,9 +278,10 @@ void bsp_wakeup(void)
 /*******************************************************************************************
  * the app_main function
  * *****************************************************************************************/ 
+void gpio_interrupt_test(void);
 void main(void)
 {
-    static RUI_LORA_AUTO_SEND_MODE autosendtemp_status;  //Flag whether modify autosend_interval by AT_cmd  
+    static RUI_LORA_AUTO_SEND_MODE autosendtemp_status;  //Flag whether modify autosend_interval by AT_cmd 
 
     rui_init();
     bsp_init();
@@ -371,8 +372,7 @@ void main(void)
                     }else
                     {
                         autosend_flag = true;
-                    }
-                            
+                    }                            
                 }
 
                 app_loop(); 

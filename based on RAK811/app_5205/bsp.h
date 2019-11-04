@@ -4,6 +4,13 @@
 extern const uint8_t level[2];
 #define low     &level[0]
 #define high    &level[1]
+#define USER_MAGIC_WORD (('R' << 0)|('A' << 8)|('K' << 16))
+
+typedef enum 
+{
+	POINT_BIT4=0,
+	POINT_BIT6
+}GPS_FORMAT;
 
 typedef struct
 {
@@ -22,7 +29,9 @@ typedef struct
 
 typedef struct 
 {
+	uint32_t magic_word;
 	uint16_t gps_timeout_cnt;	//record gps search satellite timer 
+	uint8_t gps_format;
 }user_store_data_t;
 
 

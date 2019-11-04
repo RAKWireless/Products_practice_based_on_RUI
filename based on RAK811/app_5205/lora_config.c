@@ -23,6 +23,7 @@ static uint32_t handle_lora_config(RUI_LORA_STATUS_T *config, int argc, char *ar
 static uint32_t handle_lorap2p_config(RUI_LORA_STATUS_T *config, int argc, char *argv[], char *in);
 static uint32_t handle_device_status(void);
 static uint32_t user_set_gps_timeout(uint32_t gpstimeout);
+static void user_set_gps_format(GPS_FORMAT fmt);
 struct board_config_cmd
 {
     char *name;
@@ -57,7 +58,8 @@ struct board_config_cmd cmd_str[]=
     "adr",adr,
     "send_interval",send_interval,
 
-    "gps_timeout",gps_timeout
+    "gps_timeout",gps_timeout,
+    "gps_format",gps_format
 };
 /** Structure for registering CONFIG commands */
 struct config_cmd
@@ -319,7 +321,8 @@ static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *
                 rui_return_status = rui_uart_init(atoi(argv[1]),br);
                 switch(rui_return_status)
                 {
-                    case RUI_STATUS_OK:RUI_LOG_PRINTF("OK,The UART%d baud rate switch to %d.\r\n",atoi(argv[1]),br);
+                    case RUI_STATUS_OK:
+                        RUI_LOG_PRINTF("OK.\r\n");
                         return SUCCESS;
                     case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("Parameter is invalid.\r\n");
                         return FAIL;
@@ -535,6 +538,14 @@ static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *
                 RUI_LOG_PRINTF("The AT Command is invalid.\r\n");
                 return FAIL;
             }
+            break;
+        case gps_format:
+            if(argc == 2)user_set_gps_format(atoi(argv[1]));
+            else 
+            {
+                RUI_LOG_PRINTF("The AT Command is invalid.\r\n");
+                return FAIL;
+            }            
             break;
         default :RUI_LOG_PRINTF("Parameter is invalid.\r\n");return FAIL ;
             break;
@@ -937,6 +948,15 @@ static uint32_t handle_device_status(void)
         RUI_LOG_PRINTF("\r\n"); 
 
         RUI_LOG_PRINTF("gps_timeout: %ds\r\n",user_store_data.gps_timeout_cnt);
+        switch(user_store_data.gps_format)
+        {
+            case POINT_BIT4:RUI_LOG_PRINTF("gps_format:standard LPP format\r\n");
+                break;
+            case POINT_BIT6:RUI_LOG_PRINTF("gps_format:GPS take six decimal places\r\n");
+                break;
+            default:break;
+        }
+        
         RUI_LOG_PRINTF("GPS data:\r\n");
         if(HasFix) 
         {            
@@ -965,6 +985,14 @@ static uint32_t handle_device_status(void)
         RUI_LOG_PRINTF("\r\n"); 
 
         RUI_LOG_PRINTF("gps_timeout: %ds\r\n",user_store_data.gps_timeout_cnt);
+        switch(user_store_data.gps_format)
+        {
+            case POINT_BIT4:RUI_LOG_PRINTF("gps_format:standard LPP format\r\n");
+                break;
+            case POINT_BIT6:RUI_LOG_PRINTF("gps_format:GPS take six decimal places\r\n");
+                break;
+            default:break;
+        }
         RUI_LOG_PRINTF("GPS data:\r\n");
         if(HasFix) 
         {            
@@ -988,7 +1016,7 @@ static uint32_t handle_device_status(void)
     RUI_LOG_PRINTF("*************************************************\r\n");       
 }
 
-uint32_t user_set_gps_timeout(uint32_t gpstimeout)
+static uint32_t user_set_gps_timeout(uint32_t gpstimeout)
 {
     user_store_data.gps_timeout_cnt = gpstimeout;
     rui_timer_stop(&Gps_Cnt_Timer); 
@@ -999,5 +1027,27 @@ uint32_t user_set_gps_timeout(uint32_t gpstimeout)
         RUI_LOG_PRINTF("the length over size.\r\n");
     }
     RUI_LOG_PRINTF("OK\r\n");
+}
+
+static void user_set_gps_format(GPS_FORMAT fmt)
+{
+    if(fmt > 1)
+    {
+        RUI_LOG_PRINTF("Parameter is invalid.\r\n");
+        return;
+    }else
+    {
+        RUI_LOG_PRINTF("OK\r\n");
+    }
+    
+    if(fmt != user_store_data.gps_format)
+    {
+        user_store_data.gps_format = fmt;
+        if(rui_flash_write(RUI_FLASH_USER,&user_store_data,sizeof(user_store_data)) == RUI_STATUS_PARAMETER_INVALID )
+        {
+            RUI_LOG_PRINTF("the length over size.\r\n");
+        }
+    }
+
 }
 
