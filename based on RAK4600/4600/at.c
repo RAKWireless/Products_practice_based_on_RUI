@@ -78,6 +78,11 @@ void StrToHex(char *pbDest, char *pbSrc, int nLen)
     }
 }
 
+void uart_put_string(uint8_t *msg)
+{
+    rui_uart_send(RUI_UART1, msg, strlen(msg));
+}
+
 void at_parse(char *cmd)
 {
     char  *ptr = NULL;
@@ -408,16 +413,11 @@ void at_parse(char *cmd)
         {
             work_mode =0;
         }
-        else if(strstr(cmd,"work_mode:1")!=NULL)
-        {
-            work_mode =1;
-        }
-        else if(strstr(cmd,"work_mode:2")!=NULL)
-        {
-            work_mode =2;
-        }
         else
-        {}
+        {
+            uart_put_string("Parameter is invalid.\r\n");
+            return;
+        }
 
         err_code = rui_lora_set_work_mode(work_mode);
         if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
