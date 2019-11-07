@@ -418,6 +418,13 @@ void at_parse(char *cmd)
 			memset(gsm_rsp,0,256);
             rui_cellular_response(gsm_rsp, 256, 500 * 2);
         }
+        else if (strstr(gsm_cmd,"AT+QPING")!= NULL)
+        {
+            rui_cellular_send(gsm_cmd);
+            rui_cellular_response(gsm_rsp, 256, 500 * 2);
+            memset(gsm_rsp,0,256);
+            rui_cellular_response(gsm_rsp, 256, 500 * 25);
+        }
         else 
         {
             rui_cellular_send(gsm_cmd);
