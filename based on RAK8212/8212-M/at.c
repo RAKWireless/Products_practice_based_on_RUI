@@ -357,6 +357,8 @@ void at_parse(char *cmd)
 		memset(gsm_cmd,0,100);
         memset(gsm_rsp,0,256);
         index = 0;
+        uint16_t len = 0;
+        uint8_t tmp[10] = {0};
    		ptr = strstr(cmd,"(");
 		for(index;index<1;index++)
         {
@@ -372,19 +374,32 @@ void at_parse(char *cmd)
         if (strstr(gsm_cmd,"AT+QIOPEN")!= NULL)//open
         {
             rui_cellular_send(gsm_cmd);
-            rui_cellular_response(gsm_rsp, 256, 500 * 60);
+            rui_cellular_response(gsm_rsp, 256, 500 * 2);
             memset(gsm_rsp,0,256);
-            rui_cellular_response(gsm_rsp, 256, 500 * 20);
+            rui_cellular_response(gsm_rsp, 256, 500 * 10);
 
         }
-        else if (strstr(gsm_cmd,"AT+QISEND")!= NULL)//send
+        else if (strstr(gsm_cmd,"AT+QISEND")!= NULL)//send (AT+QISEND=0,9)
         {
+            ptr = strstr(cmd,"QISEND=");
+            for(index=0;index<9;index++)
+            {
+                ptr++;
+            }
+            index = 0;
+            for(ptr;*ptr !=')';ptr++)
+            {
+                tmp[index++] = *ptr;
+            }
+            len = atoi(tmp) + 2;
+            memset(gsm_cmd,0,100);
+            sprintf(gsm_cmd,"AT+QISEND=0,%d",len);
             rui_cellular_send(gsm_cmd);
             rui_delay_ms(1000);
 			memset(gsm_rsp,0,256);
-            rui_cellular_response(gsm_rsp, 256, 500 * 20);
+            rui_cellular_response(gsm_rsp, 256, 500 * 2);
         }
-        else
+        else 
         {
             rui_cellular_send(gsm_cmd);
             rui_cellular_response(gsm_rsp, 256, 500 * 60);
