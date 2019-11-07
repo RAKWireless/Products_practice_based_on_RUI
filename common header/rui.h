@@ -26,6 +26,45 @@
 #include "timer.h"
 #endif
 
+/****************************************************************************************
+RUI AT return value. Now all RAK products use uniform AT response and form, for example
+    1. Right answer
+        send   ----> at+version 
+        receive----> 
+        at+version:
+        Firmware Version: RUI v3.0.0.7
+        OK
+    2. Wrong answer
+        send   ----> at+set_config=cellular:send_interval:0,150000 
+        receive----> 
+        at+set_config=cellular:send_interval:
+        ERROR:RUI_AT_RW_FLASH_ERROR 2
+******************************************************************************************/
+
+typedef enum{
+ RUI_AT_OK=0,
+ RUI_AT_PARAMETER_INVALID,
+ RUI_AT_RW_FLASH_ERROR,
+ RUI_AT_SENSOR_OK=20,
+ RUI_AT_BLE_STATUS_OK=40,
+ RUI_AT_BLE_ERROR_INVALID_STATE=41,
+ RUI_AT_CELLULAR_STATUS_OK=60,
+ RUI_AT_LORA_BUSY=80,
+ RUI_AT_LORA_SERVICE_UNKNOWN,
+ RUI_AT_LORA_PARAMETER_INVALID,
+ RUI_AT_LORA_FREQUENCY_INVALID,
+ RUI_AT_LORA_DATARATE_INVALID,
+ RUI_AT_LORA_FREQ_AND_DR_INVALID,
+ RUI_AT_LORA_NO_NETWORK_JOINED,
+ RUI_AT_LORA_LENGTH_ERROR,
+ RUI_AT_LORA_DEVICE_OFF,
+ RUI_AT_LORA_REGION_NOT_SUPPORTED,
+ RUI_AT_LORA_DUTYCYCLE_RESTRICTED,
+ RUI_AT_LORA_NO_CHANNEL_FOUND,
+ RUI_AT_LORA_NO_FREE_CHANNEL_FOUND
+}RUI_AT_RESPONSE;
+
+
 /* RUI API return value*/
 typedef enum{
  RUI_STATUS_OK=0,
