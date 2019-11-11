@@ -21,7 +21,7 @@
 
 
 #define AT_HELP		\
-"at+version----Get the current firmware version number\n \
+" at+version----Get the current firmware version number\n \
 at+set_config=device:restart----device restart cmd\n \
 at+get_config=device:status----show all components status\n \
 at+set_config=device:sleep:X----device sleep command\n \
@@ -37,7 +37,7 @@ at+set_config=hologram:----set hologram card id\n \
 at+send=hologram:user:----send user define data\n \
 at+send=hologram:sensor----send device data\n \
 at+set_config=ble:work_mode:----ble mode choose\n \
-at+set_config=uart:work_mode:x----set uart work mode\\n"
+at+set_config=uart:work_mode:x----set uart work mode \n"
 
 
 #ifndef AT_HELP

@@ -137,6 +137,7 @@ void at_parse(char *cmd)
 	char  *ptr = NULL;
     uint8_t gsm_cmd[100] = {0};
     uint8_t gsm_rsp[256] = {0};
+    uint8_t at_rsp[1536] = {0};
     uint8_t ip_data[20] = {0};
     uint8_t port_data[20] = {0};
     uint8_t operator_long_data[20] = {0};  
@@ -188,8 +189,11 @@ void at_parse(char *cmd)
        strstr(cmd,"at+send=hologram:sensor")==NULL && strstr(cmd,"at+send=hologram:user:")==NULL && strstr(cmd, "at+set_config=uart:work_mode:")==NULL && 
 	   strstr(cmd, "at+set_config=device:uart_mode:X:Y")==NULL && strstr(cmd,"at+help")==NULL)
     {
+        memset(at_rsp,0,1536);
         RUI_LOG_PRINTF("Invalid at command!!");
-        rui_at_response(false, "Invalid at command.\r\n", RAK_ERROR);
+        memcpy(at_rsp,cmd,strlen(cmd));
+        memcpy(at_rsp+strlen(at_rsp),"ERROR:RUI_AT_UNSUPPORT",strlen("ERROR:RUI_AT_UNSUPPORT"));
+        rui_at_response(false, at_rsp, RUI_AT_UNSUPPORT);
         return;
     }  
     if(strstr(cmd,"version")!= 0)
@@ -197,13 +201,19 @@ void at_parse(char *cmd)
         char ver[48]="Firmware Version: RUI v";
         strcat(ver, RUI_VERSION);
 		RUI_LOG_PRINTF("%s", ver);
-        rui_at_response(true, ver, RAK_OK);
+        memset(at_rsp,0,1536);
+        memcpy(at_rsp,"at+version\r\n",strlen("at+version\r\n"));
+        sprintf(at_rsp+strlen(at_rsp),"%s\r\n",ver);
+        rui_at_response(true, at_rsp, RAK_OK);
         return;
     }
     if(strstr(cmd,"device:sleep:1")!= 0)
     {
 		RUI_LOG_PRINTF("Device has been sleep!");
-        rui_at_response(true, NULL, RAK_OK);
+        memset(at_rsp,0,1536);
+        sprintf(at_rsp,"%s",cmd);
+        //sprintf(at_rsp+strlen(at_rsp),"%s\r\n",ver);
+        rui_at_response(true, at_rsp, RAK_OK);
 
 		if(power_flag == 0)
 		{
@@ -216,19 +226,26 @@ void at_parse(char *cmd)
     {
 		rui_device_sleep(0);
 		power_flag = 0;
-        RUI_LOG_PRINTF(true, NULL, RAK_OK);
+        memset(at_rsp,0,1536);
+        sprintf(at_rsp,"%s",cmd);
+        //sprintf(at_rsp+strlen(at_rsp),"%s\r\n",ver);
+        rui_at_response(true, at_rsp, RAK_OK);
         return;
     }
     if(strstr(cmd,"device:gps:0")!= 0)
     {
         //bg96 inner gps will automatically off when not use
-        rui_at_response(true, NULL, RAK_OK);
+        memset(at_rsp,0,1536);
+        sprintf(at_rsp,"%s",cmd);
+        rui_at_response(true, at_rsp, RAK_OK);
         return;
     }
     if(strstr(cmd,"device:gps:1")!= 0)
     {
         //bg96 inner gps will automatically off when not use
-        rui_at_response(true, NULL, RAK_OK);
+        memset(at_rsp,0,1536);
+        sprintf(at_rsp,"%s",cmd);
+        rui_at_response(true, at_rsp, RAK_OK);
         return;
     }
 
@@ -269,8 +286,18 @@ void at_parse(char *cmd)
         RUI_LOG_PRINTF("g_rui_cfg_t.sleep_enable = %d",g_rui_cfg_t.sleep_enable); 
         RUI_LOG_PRINTF("g_rui_cfg_t.sleep_period = %d",g_rui_cfg_t.sleep_period);
         err_code = rui_flash_write(RUI_FLASH_ORIGIN,NULL,0);
-        if (err_code != 0){rui_at_response(false, NULL, WRITE_FLASH_FAIL);}
-        else{rui_at_response(true, NULL, RAK_OK);}
+        memset(at_rsp,0,1536);
+        if (err_code != 0)
+        {
+            memcpy(at_rsp,cmd,strlen(cmd));
+            memcpy(at_rsp+strlen(at_rsp),"ERROR:RUI_AT_RW_FLASH_ERROR",strlen("ERROR:RUI_AT_RW_FLASH_ERROR"));
+            rui_at_response(false, at_rsp, RUI_AT_RW_FLASH_ERROR);
+        }
+        else
+        {
+            sprintf(at_rsp,"%s",cmd);
+            rui_at_response(true, at_rsp, RAK_OK);   
+        }
         return;
     }    
     if(strstr(cmd,"device:restart")!= NULL)
@@ -297,7 +324,9 @@ void at_parse(char *cmd)
         rui_uart_send(RUI_UART1, msg, strlen(msg));
         #endif
     	rui_delay_ms(1000);
-        
+        memset(at_rsp,0,1536);
+        sprintf(at_rsp,"%s",cmd);
+        rui_at_response(true, at_rsp, RAK_OK);
 		rui_device_reset();
         return;
     }
@@ -340,21 +369,28 @@ void at_parse(char *cmd)
     sprintf(send_data+strlen(send_data),"Lat(0-N,1-S):%d,%s,Lon(0-E,1-W):%d,%s; ",g_gps_data.LatitudeNS,lat_data,g_gps_data.LongitudaEW,lon_data); 
 
 
-        rui_at_response(true, send_data, RAK_OK);
+        memset(at_rsp,0,1536);
+        memcpy(at_rsp,cmd,strlen(cmd));
+        sprintf(at_rsp+strlen(at_rsp),"%s\r\n",send_data);
+        rui_at_response(true, at_rsp, RAK_OK);
         return;
     }
     //at+set_config=device:cellular:0
     if(strstr(cmd,"device:cellular:0")!= NULL)
     {
         rui_cellular_mode(0);
-        rui_at_response(true, NULL, RAK_OK);
+        memset(at_rsp,0,1536);
+        memcpy(at_rsp,cmd,strlen(cmd));
+        rui_at_response(true, at_rsp, RAK_OK);
         return;
 	}
     //at+set_config=device:cellular:1
     if(strstr(cmd,"device:cellular:1")!= NULL)
     {
         rui_cellular_mode(1);
-        rui_at_response(true, NULL, RAK_OK);
+        memset(at_rsp,0,1536);
+        memcpy(at_rsp,cmd,strlen(cmd));
+        rui_at_response(true, at_rsp, RAK_OK);
         return;
     }
     //at+scan=cellular
@@ -537,9 +573,18 @@ void at_parse(char *cmd)
          memcpy(&(g_rui_cfg_t.g_cellular_cfg_t.operator_apn_data[0]),operator_apn_data,20);   
          memset(&(g_rui_cfg_t.g_cellular_cfg_t.operator_net_data[0]),0,20);
          memcpy(&(g_rui_cfg_t.g_cellular_cfg_t.operator_net_data[0]),operator_net_data,20);                       
-        err_code = rui_flash_write(RUI_FLASH_ORIGIN,NULL,0);
-        if (err_code != 0){rui_at_response(false, NULL, WRITE_FLASH_FAIL);}
-        else{rui_at_response(true, NULL, RAK_OK);}
+        memset(at_rsp,0,1536);
+        if (err_code != 0)
+        {
+            memcpy(at_rsp,cmd,strlen(cmd));
+            memcpy(at_rsp+strlen(at_rsp),"ERROR:RUI_AT_RW_FLASH_ERROR",strlen("ERROR:RUI_AT_RW_FLASH_ERROR"));
+            rui_at_response(false, at_rsp, RUI_AT_RW_FLASH_ERROR);
+        }
+        else
+        {
+            sprintf(at_rsp,"%s",cmd);
+            rui_at_response(true, at_rsp, RAK_OK);   
+        }
         return;
      }
 
@@ -561,9 +606,18 @@ void at_parse(char *cmd)
             g_rui_cfg_t.g_cellular_cfg_t.hologram_card_num[index++] = *ptr;
          };
 
-        err_code = rui_flash_write(RUI_FLASH_ORIGIN,NULL,0);
-        if (err_code != 0){rui_at_response(false, NULL, WRITE_FLASH_FAIL);}
-        else{rui_at_response(true, NULL, RAK_OK);}
+        memset(at_rsp,0,1536);
+        if (err_code != 0)
+        {
+            memcpy(at_rsp,cmd,strlen(cmd));
+            memcpy(at_rsp+strlen(at_rsp),"ERROR:RUI_AT_RW_FLASH_ERROR",strlen("ERROR:RUI_AT_RW_FLASH_ERROR"));
+            rui_at_response(false, at_rsp, RUI_AT_RW_FLASH_ERROR);
+        }
+        else
+        {
+            sprintf(at_rsp,"%s",cmd);
+            rui_at_response(true, at_rsp, RAK_OK);   
+        }
         return;
      }
      //at+send=hologram:sensor
@@ -625,7 +679,9 @@ void at_parse(char *cmd)
          rui_cellular_send("AT+QICLOSE=0,30000");
          memset(gsm_rsp,0,256);
          rui_cellular_response(gsm_rsp, 256, 500 * 60);
-         rui_at_response(true, NULL, RAK_OK);
+         memset(at_rsp,0,1536);
+         sprintf(at_rsp,"%s",cmd);
+         rui_at_response(true, at_rsp, RAK_OK);   
         return;
      }
      //at+send=hologram:user:
@@ -669,7 +725,9 @@ void at_parse(char *cmd)
          rui_cellular_send("AT+QICLOSE=0,30000");
          memset(gsm_rsp,0,256);
          rui_cellular_response(gsm_rsp, 256, 500 * 60);
-         rui_at_response(true, NULL, RAK_OK);
+         memset(at_rsp,0,1536);
+         sprintf(at_rsp,"%s",cmd);
+         rui_at_response(true, at_rsp, RAK_OK);
         return;
      }
 
@@ -703,19 +761,33 @@ void at_parse(char *cmd)
         
         RUI_LOG_PRINTF("g_rui_cfg_t.g_ble_cfg_t.work_mode = %d", work_mode); 
         RUI_LOG_PRINTF("g_rui_cfg_t.g_ble_cfg_t.long_range_enable = %d", long_range_enable); 
-        err_code = rui_ble_set_work_mode(work_mode, long_range_enable);
-        if (err_code != 0){rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL);}
-        else{rui_at_response(true, msg_flash_success, RAK_OK);}
+        memset(at_rsp,0,1536);
+        if (err_code != 0)
+        {
+            memcpy(at_rsp,cmd,strlen(cmd));
+            memcpy(at_rsp+strlen(at_rsp),"ERROR:RUI_AT_RW_FLASH_ERROR",strlen("ERROR:RUI_AT_RW_FLASH_ERROR"));
+            rui_at_response(false, at_rsp, RUI_AT_RW_FLASH_ERROR);
+        }
+        else
+        {
+            sprintf(at_rsp,"%s",cmd);
+            rui_at_response(true, at_rsp, RAK_OK);   
+        }
 		return;
     }
 
     // at+help
     if (strstr(cmd, "at+help") != NULL)
     {
-	    rui_at_response(true, AT_HELP, RAK_OK);
-		RUI_LOG_PRINTF(AT_HELP);
+        memset(at_rsp,0,1536);
+        memcpy(at_rsp,"at+help\r\n",strlen("at+help\r\n"));
+        sprintf(at_rsp+strlen(at_rsp),"%s\r\n",AT_HELP);
+        rui_at_response(true, at_rsp, RAK_OK);
 		return;
 	}
-	rui_at_response(false, "Not Support Command!", RAK_ERROR);
-	RUI_LOG_PRINTF("Not Support Command!!");
+	memset(at_rsp,0,1536);
+    RUI_LOG_PRINTF("Invalid at command!!");
+    memcpy(at_rsp,cmd,strlen(cmd));
+    memcpy(at_rsp+strlen(at_rsp),"ERROR:RUI_AT_UNSUPPORT",strlen("ERROR:RUI_AT_UNSUPPORT"));
+    rui_at_response(false, at_rsp, RUI_AT_UNSUPPORT);
 }

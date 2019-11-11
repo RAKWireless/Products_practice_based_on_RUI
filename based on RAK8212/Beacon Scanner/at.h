@@ -21,7 +21,7 @@
 
 
 #define AT_HELP		\
-"at+version----Get the current firmware version number\n \
+" at+version----Get the current firmware version number\n \
 at+set_config=device:restart----device restart cmd\n \
 at+get_config=device:status----show all components status\n \
 at+set_config=device:sleep:X----device sleep command\n \
