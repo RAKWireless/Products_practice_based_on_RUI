@@ -43,6 +43,7 @@ RUI AT return value. Now all RAK products use uniform AT response and form, for 
 
 typedef enum{
  RUI_AT_OK=0,
+ RUI_AT_UNSUPPORT,
  RUI_AT_PARAMETER_INVALID,
  RUI_AT_RW_FLASH_ERROR,
  RUI_AT_SENSOR_OK=20,
