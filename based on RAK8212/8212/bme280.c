@@ -296,7 +296,7 @@ uint32_t get_bme280_data(float *temp, float *humidity, float *press)
     }
     *temp = (float)comp_data.temperature;
     *humidity = (float)comp_data.humidity;
-    *press = (float)comp_data.pressure;
+    *press = (float)comp_data.pressure/1000.00;
 }
 uint32_t get_bme280_humidity(double *humidity)
 {
