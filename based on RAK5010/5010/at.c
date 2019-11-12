@@ -211,6 +211,14 @@ void at_parse(char *cmd)
     if(strstr(cmd,"device:sleep:1")!= 0)
     {
 		//RUI_LOG_PRINTF("Device has been sleep!");
+        if(strstr(cmd,"1") == NULL && strstr(cmd,"0") == NULL)
+        {
+            memset(at_rsp,0,1536);
+            memcpy(at_rsp,cmd,strlen(cmd));
+            memcpy(at_rsp+strlen(at_rsp),"ERROR:RUI_AT_PARAMETER_INVALID",strlen("ERROR:RUI_AT_PARAMETER_INVALID"));
+            rui_at_response(false, at_rsp, RUI_AT_PARAMETER_INVALID);
+            return;
+        }
         memset(at_rsp,0,1536);
         sprintf(at_rsp,"%s",cmd);
         //sprintf(at_rsp+strlen(at_rsp),"%s\r\n",ver);
@@ -225,6 +233,14 @@ void at_parse(char *cmd)
     }
     if(strstr(cmd,"device:sleep:0")!= 0)
     {
+        if(strstr(cmd,"1") == NULL && strstr(cmd,"0") == NULL)
+        {
+            memset(at_rsp,0,1536);
+            memcpy(at_rsp,cmd,strlen(cmd));
+            memcpy(at_rsp+strlen(at_rsp),"ERROR:RUI_AT_PARAMETER_INVALID",strlen("ERROR:RUI_AT_PARAMETER_INVALID"));
+            rui_at_response(false, at_rsp, RUI_AT_PARAMETER_INVALID);
+            return;
+        }
 		rui_device_sleep(0);
 		power_flag = 0;
         memset(at_rsp,0,1536);
@@ -236,6 +252,14 @@ void at_parse(char *cmd)
     if(strstr(cmd,"device:gps:0")!= 0)
     {
         //bg96 inner gps will automatically off when not use
+        if(strstr(cmd,"1") == NULL && strstr(cmd,"0") == NULL)
+        {
+            memset(at_rsp,0,1536);
+            memcpy(at_rsp,cmd,strlen(cmd));
+            memcpy(at_rsp+strlen(at_rsp),"ERROR:RUI_AT_PARAMETER_INVALID",strlen("ERROR:RUI_AT_PARAMETER_INVALID"));
+            rui_at_response(false, at_rsp, RUI_AT_PARAMETER_INVALID);
+            return;
+        }
         memset(at_rsp,0,1536);
         sprintf(at_rsp,"%s",cmd);
         rui_at_response(true, at_rsp, RAK_OK);
@@ -244,6 +268,14 @@ void at_parse(char *cmd)
     if(strstr(cmd,"device:gps:1")!= 0)
     {
         //bg96 inner gps will automatically off when not use
+        if(strstr(cmd,"1") == NULL && strstr(cmd,"0") == NULL)
+        {
+            memset(at_rsp,0,1536);
+            memcpy(at_rsp,cmd,strlen(cmd));
+            memcpy(at_rsp+strlen(at_rsp),"ERROR:RUI_AT_PARAMETER_INVALID",strlen("ERROR:RUI_AT_PARAMETER_INVALID"));
+            rui_at_response(false, at_rsp, RUI_AT_PARAMETER_INVALID);
+            return;
+        }
         memset(at_rsp,0,1536);
         sprintf(at_rsp,"%s",cmd);
         rui_at_response(true, at_rsp, RAK_OK);
@@ -279,8 +311,11 @@ void at_parse(char *cmd)
         }
 		if(atoi(sleep_data)<150000)
 		{
-			RUI_LOG_PRINTF("send interval should not be less than 150000 !!!!"); 
-			return;
+            memset(at_rsp,0,1536);
+            memcpy(at_rsp,cmd,strlen(cmd));
+            memcpy(at_rsp+strlen(at_rsp),"ERROR:RUI_AT_PARAMETER_INVALID",strlen("ERROR:RUI_AT_PARAMETER_INVALID"));
+            rui_at_response(false, at_rsp, RUI_AT_PARAMETER_INVALID);
+            return;
 		}
         g_rui_cfg_t.sleep_period = atoi(sleep_data);
 
@@ -382,6 +417,14 @@ void at_parse(char *cmd)
     //at+set_config=device:cellular:0
     if(strstr(cmd,"device:cellular:0")!= NULL)
     {
+        if(strstr(cmd,"1") == NULL && strstr(cmd,"0") == NULL)
+        {
+            memset(at_rsp,0,1536);
+            memcpy(at_rsp,cmd,strlen(cmd));
+            memcpy(at_rsp+strlen(at_rsp),"ERROR:RUI_AT_PARAMETER_INVALID",strlen("ERROR:RUI_AT_PARAMETER_INVALID"));
+            rui_at_response(false, at_rsp, RUI_AT_PARAMETER_INVALID);
+            return;
+        }
         rui_cellular_mode(0);
         memset(at_rsp,0,1536);
         memcpy(at_rsp,cmd,strlen(cmd));
@@ -391,6 +434,14 @@ void at_parse(char *cmd)
     //at+set_config=device:cellular:1
     if(strstr(cmd,"device:cellular:1")!= NULL)
     {
+        if(strstr(cmd,"1") == NULL && strstr(cmd,"0") == NULL)
+        {
+            memset(at_rsp,0,1536);
+            memcpy(at_rsp,cmd,strlen(cmd));
+            memcpy(at_rsp+strlen(at_rsp),"ERROR:RUI_AT_PARAMETER_INVALID",strlen("ERROR:RUI_AT_PARAMETER_INVALID"));
+            rui_at_response(false, at_rsp, RUI_AT_PARAMETER_INVALID);
+            return;
+        }
         rui_cellular_mode(1);
         memset(at_rsp,0,1536);
         memcpy(at_rsp,cmd,strlen(cmd));
@@ -750,12 +801,17 @@ void at_parse(char *cmd)
             if (*ptr == '1')
             {
                 rui_uart_mode_config(RUI_UART1, RUI_UART_UNVARNISHED);
+                memset(at_rsp,0,1536);
+                sprintf(at_rsp,"%s",cmd);
+                rui_at_response(true, at_rsp, RAK_OK);
+                return;
             }
         }
 
         memset(at_rsp,0,1536);
-        sprintf(at_rsp,"%s",cmd);
-        rui_at_response(true, at_rsp, RAK_OK);
+        memcpy(at_rsp,cmd,strlen(cmd));
+        memcpy(at_rsp+strlen(at_rsp),"ERROR:RUI_AT_PARAMETER_INVALID",strlen("ERROR:RUI_AT_PARAMETER_INVALID"));
+        rui_at_response(false, at_rsp, RUI_AT_PARAMETER_INVALID);
         return ;
     }
     // at+set_config=ble:work_mode:X:Y
