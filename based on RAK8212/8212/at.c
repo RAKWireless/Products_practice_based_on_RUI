@@ -190,7 +190,7 @@ void at_parse(char *cmd)
 	   strstr(cmd, "at+set_config=device:uart_mode:X:Y")==NULL && strstr(cmd,"at+help")==NULL)
     {
         memset(at_rsp,0,1536);
-        RUI_LOG_PRINTF("Invalid at command!!");
+        //RUI_LOG_PRINTF("Invalid at command!!");
         memcpy(at_rsp,cmd,strlen(cmd));
         memcpy(at_rsp+strlen(at_rsp),"ERROR:RUI_AT_UNSUPPORT",strlen("ERROR:RUI_AT_UNSUPPORT"));
         rui_at_response(false, at_rsp, RUI_AT_UNSUPPORT);
@@ -200,7 +200,7 @@ void at_parse(char *cmd)
     {
         char ver[48]="Firmware Version: RUI v";
         strcat(ver, RUI_VERSION);
-		RUI_LOG_PRINTF("%s", ver);
+		//RUI_LOG_PRINTF("%s", ver);
         memset(at_rsp,0,1536);
         memcpy(at_rsp,"at+version\r\n",strlen("at+version\r\n"));
         sprintf(at_rsp+strlen(at_rsp),"%s\r\n",ver);
@@ -209,7 +209,7 @@ void at_parse(char *cmd)
     }
     if(strstr(cmd,"device:sleep:1")!= 0)
     {
-		RUI_LOG_PRINTF("Device has been sleep!");
+		//RUI_LOG_PRINTF("Device has been sleep!");
         memset(at_rsp,0,1536);
         sprintf(at_rsp,"%s",cmd);
         //sprintf(at_rsp+strlen(at_rsp),"%s\r\n",ver);
@@ -786,7 +786,7 @@ void at_parse(char *cmd)
 		return;
 	}
 	memset(at_rsp,0,1536);
-    RUI_LOG_PRINTF("Invalid at command!!");
+    //RUI_LOG_PRINTF("Invalid at command!!");
     memcpy(at_rsp,cmd,strlen(cmd));
     memcpy(at_rsp+strlen(at_rsp),"ERROR:RUI_AT_UNSUPPORT",strlen("ERROR:RUI_AT_UNSUPPORT"));
     rui_at_response(false, at_rsp, RUI_AT_UNSUPPORT);
