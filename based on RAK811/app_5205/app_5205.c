@@ -26,9 +26,12 @@ TimerEvent_t Led_Green_Timer;
 TimerEvent_t Led_Blue_Timer;  //LoRa send out indicator light
 volatile static bool autosend_flag = false;    //auto send flag
 static uint8_t a[80]={};    // Data buffer to be sent by lora
+static uint8_t sensor_data_cnt=0;  //send data counter by LoRa 
 const uint8_t level[2]={0,1};
 bool IsJoiningflag= false;  //flag whether joining or not status
-bool sample_status = false;  //flag sensor sample record for print sensor data by AT command 
+bool sample_flag = false;  //flag sensor sample record for print sensor data by AT command 
+bool sample_status = false;  //current whether sample sensor completely
+bool sendfull = false;  //flag whether send all sensor data 
 
 extern uint8_t NmeaString[];//GPS variate and buffer
 extern uint8_t NmeaStringSize;
@@ -133,12 +136,97 @@ void bsp_init(void)
     GpsInit();	
 }
 
+
+uint8_t lpp_cnt=0;  //record lpp package count
+typedef struct 
+{   uint8_t startcnt;
+    uint8_t size;
+}lpp_data_t;
+lpp_data_t lpp_data[10];
+void user_lora_send(void)
+{
+    uint8_t dr;
+    uint16_t ploadsize;
+    static uint16_t temp_cnt=0;
+    uint16_t temp_size=0;  //send package size 
+    uint8_t* Psend_start;
+    if(autosend_flag)
+    {
+        autosend_flag = false;
+        rui_lora_get_dr(&dr,&ploadsize);
+        if(ploadsize < sensor_data_cnt)
+        {
+            Psend_start = &a[lpp_data[temp_cnt].startcnt];                          
+            for(;temp_cnt <= lpp_cnt; temp_cnt++)
+            {
+                // UartPrint("lpp_cnt:%d, temp_size:%d,lpp_data[%d].size:%d,Msize:%d\r\n",lpp_cnt,temp_size,temp_cnt,lpp_data[temp_cnt].size,ploadsize-foptslen);
+                if(ploadsize < (temp_size + lpp_data[temp_cnt].size))
+                {                                                              
+                    rui_return_status = rui_lora_send(8,Psend_start,temp_size);
+                    switch(rui_return_status)
+                    {
+                        case RUI_STATUS_OK:return;
+                        default: RUI_LOG_PRINTF("[LoRa]: send error %d\r\n",rui_return_status);  
+                            autosend_flag = true;                                      
+                            break;
+                    }                
+                }else
+                {                   
+                    if(temp_cnt == lpp_cnt)
+                    {
+                        rui_return_status = rui_lora_send(8,Psend_start,temp_size);
+                        switch(rui_return_status)
+                        {
+                            case RUI_STATUS_OK:RUI_LOG_PRINTF("[LoRa]: send out\r\n");
+                                sample_status = false;
+                                sendfull = true;
+                                lpp_cnt = 0;
+                                temp_cnt = 0;
+                                sensor_data_cnt=0; 
+                                return;
+                                break;
+                            default: RUI_LOG_PRINTF("[LoRa]: send error %d\r\n",rui_return_status);  
+                                autosend_flag = true;                                      
+                                break;
+                        } 
+                    }else 
+                    {
+                        temp_size += lpp_data[temp_cnt].size; 
+                    }
+                }                   
+            }
+        }else
+        {
+            rui_return_status = rui_lora_send(8,a,sensor_data_cnt);
+            switch(rui_return_status)
+            {
+                case RUI_STATUS_OK:RUI_LOG_PRINTF("[LoRa]: send out\r\n");
+                    sample_status = false;
+                    sendfull = true;
+                    lpp_cnt = 0;
+                    sensor_data_cnt=0; 
+                    break;
+                default: RUI_LOG_PRINTF("[LoRa]: send error %d\r\n",rui_return_status);
+                    rui_lora_get_status(false,&app_lora_status); 
+                    switch(app_lora_status.autosend_status)
+                    {
+                        case RUI_AUTO_ENABLE_SLEEP:rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after send success
+                            break;
+                        case RUI_AUTO_ENABLE_NORMAL:rui_lora_set_send_interval(RUI_AUTO_ENABLE_NORMAL,app_lora_status.lorasend_interval);  //start autosend_timer after send success
+                            break;
+                        default:break;
+                    }
+                    break;
+            }               
+        }
+    }                    
+}
+
 extern bsp_sensor_data_t bsp_sensor;
 void app_loop(void)
 {
-    int temp=0;  
-    int x,y,z;
-    static uint8_t sensor_data_cnt=0;  //send data counter by LoRa
+    int temp=0;         
+    int x,y,z;       
     rui_lora_get_status(false,&app_lora_status);
     if(app_lora_status.IsJoined)  //if LoRaWAN is joined
     {
@@ -151,6 +239,7 @@ void app_loop(void)
                 switch(user_store_data.gps_format)
                 {
                     case POINT_BIT4:  //standard LPP
+                        lpp_data[lpp_cnt].startcnt = sensor_data_cnt;
                         a[sensor_data_cnt++]=0x01;  //11bytes
                         a[sensor_data_cnt++]=0x88;
                         a[sensor_data_cnt++]=((int32_t)(bsp_sensor.latitude * 10000) >> 16) & 0xFF;
@@ -162,9 +251,11 @@ void app_loop(void)
                         a[sensor_data_cnt++]=((int32_t)(bsp_sensor.altitude* 10) >> 16) & 0xFF;
                         a[sensor_data_cnt++]=((int32_t)(bsp_sensor.altitude* 10) >> 8) & 0xFF;
                         a[sensor_data_cnt++]=((int32_t)(bsp_sensor.altitude* 10)) & 0xFF;
-
+                        lpp_data[lpp_cnt].size = sensor_data_cnt - lpp_data[lpp_cnt].startcnt;
+                        lpp_cnt++;
                         break;
                     case POINT_BIT6:
+                        lpp_data[lpp_cnt].startcnt = sensor_data_cnt;
                         a[sensor_data_cnt++]=0x01;  //14byte
                         a[sensor_data_cnt++]=0x88;
                         a[sensor_data_cnt++]=((int32_t) (bsp_sensor.latitude * 1000000) >> 24) & 0xFF;
@@ -179,6 +270,8 @@ void app_loop(void)
                         a[sensor_data_cnt++]=((int32_t)(bsp_sensor.altitude * 10) >> 16) & 0xFF;
                         a[sensor_data_cnt++]=((int32_t)(bsp_sensor.altitude * 10) >> 8) & 0xFF;
                         a[sensor_data_cnt++]=((int32_t)(bsp_sensor.altitude * 10)) & 0xFF;
+                        lpp_data[lpp_cnt].size = sensor_data_cnt - lpp_data[lpp_cnt].startcnt;
+                        lpp_cnt++;
                         break;
                     default :break;
                 }                
@@ -188,36 +281,52 @@ void app_loop(void)
             bsp_sensor.voltage=bsp_sensor.voltage/1000.0;   //convert mV to V
             RUI_LOG_PRINTF("Battery Voltage = %d.%d V \r\n",(uint32_t)(bsp_sensor.voltage), (uint32_t)((bsp_sensor.voltage)*1000-((int32_t)(bsp_sensor.voltage)) * 1000));
             temp=(uint16_t)round(bsp_sensor.voltage*100.0);
+            lpp_data[lpp_cnt].startcnt = sensor_data_cnt;
             a[sensor_data_cnt++]=0x08;
             a[sensor_data_cnt++]=0x02;
             a[sensor_data_cnt++]=(temp&0xffff) >> 8;
-            a[sensor_data_cnt++]=temp&0xff;				
+            a[sensor_data_cnt++]=temp&0xff;	
+            lpp_data[lpp_cnt].size = sensor_data_cnt - lpp_data[lpp_cnt].startcnt;	
+            lpp_cnt++;		
 
             if(BME680_get_data(&bsp_sensor.humidity,&bsp_sensor.temperature,&bsp_sensor.pressure,&bsp_sensor.resis)==0)
             {
+                lpp_data[lpp_cnt].startcnt = sensor_data_cnt;
                 a[sensor_data_cnt++]=0x07;
                 a[sensor_data_cnt++]=0x68;
                 a[sensor_data_cnt++]=( bsp_sensor.humidity / 500 ) & 0xFF;
-					
+                lpp_data[lpp_cnt].size = sensor_data_cnt - lpp_data[lpp_cnt].startcnt;
+                lpp_cnt++;
+
+                lpp_data[lpp_cnt].startcnt = sensor_data_cnt;	
                 a[sensor_data_cnt++]=0x06;
                 a[sensor_data_cnt++]=0x73;
                 a[sensor_data_cnt++]=(( bsp_sensor.pressure / 10 ) >> 8 ) & 0xFF;
                 a[sensor_data_cnt++]=(bsp_sensor.pressure / 10 ) & 0xFF;
+                lpp_data[lpp_cnt].size = sensor_data_cnt - lpp_data[lpp_cnt].startcnt;
+                lpp_cnt++;
 			
+                lpp_data[lpp_cnt].startcnt = sensor_data_cnt;
                 a[sensor_data_cnt++]=0x02;
                 a[sensor_data_cnt++]=0x67;
                 a[sensor_data_cnt++]=(( bsp_sensor.temperature / 10 ) >> 8 ) & 0xFF;
                 a[sensor_data_cnt++]=(bsp_sensor.temperature / 10 ) & 0xFF;
+                lpp_data[lpp_cnt].size = sensor_data_cnt - lpp_data[lpp_cnt].startcnt;
+                lpp_cnt++;
 
+                lpp_data[lpp_cnt].startcnt = sensor_data_cnt;
                 a[sensor_data_cnt++] = 0x04;
 				a[sensor_data_cnt++] = 0x02; //analog output
 				a[sensor_data_cnt++] = (((int32_t)(bsp_sensor.resis / 10)) >> 8) & 0xFF;
 				a[sensor_data_cnt++] = ((int32_t)(bsp_sensor.resis / 10 )) & 0xFF;
+                lpp_data[lpp_cnt].size = sensor_data_cnt - lpp_data[lpp_cnt].startcnt;
+                lpp_cnt++;
             }
 
             if(lis3dh_get_data(&bsp_sensor.triaxial_x,&bsp_sensor.triaxial_y,&bsp_sensor.triaxial_z) == 0)
             {
                 x=(int)(bsp_sensor.triaxial_x);y=(int)(bsp_sensor.triaxial_y);z=(int)(bsp_sensor.triaxial_z);
+                lpp_data[lpp_cnt].startcnt = sensor_data_cnt;
                 a[sensor_data_cnt++]=0x03;
                 a[sensor_data_cnt++]=0x71;
                 a[sensor_data_cnt++]=(x>>8) & 0xff;
@@ -226,30 +335,17 @@ void app_loop(void)
                 a[sensor_data_cnt++]=y & 0xff;
                 a[sensor_data_cnt++]=(z>>8) & 0xff;;
                 a[sensor_data_cnt++]=z & 0xff;
+                lpp_data[lpp_cnt].size = sensor_data_cnt - lpp_data[lpp_cnt].startcnt;
+                lpp_cnt++;
             }
 
 	        if(sensor_data_cnt != 0)
-            {                    
-                sample_status = true;
+            { 
+                sample_status = true;                   
+                sample_flag = true;
                 RUI_LOG_PRINTF("\r\n");
-                rui_return_status = rui_lora_send(8,a,sensor_data_cnt);
-                switch(rui_return_status)
-                {
-                    case RUI_STATUS_OK:RUI_LOG_PRINTF("[LoRa]: send out\r\n");
-                        break;
-                    default: RUI_LOG_PRINTF("[LoRa]: send error %d\r\n",rui_return_status);
-                        rui_lora_get_status(false,&app_lora_status); 
-                        switch(app_lora_status.autosend_status)
-                        {
-                            case RUI_AUTO_ENABLE_SLEEP:rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after send success
-                                break;
-                            case RUI_AUTO_ENABLE_NORMAL:rui_lora_set_send_interval(RUI_AUTO_ENABLE_NORMAL,app_lora_status.lorasend_interval);  //start autosend_timer after send success
-                                break;
-                            default:break;
-                        }
-						break;
-                }                 
-                sensor_data_cnt=0;                       
+                autosend_flag = true;
+                user_lora_send();                               
             }	
             else 
             {                
@@ -265,7 +361,7 @@ void app_loop(void)
             switch(rui_return_status)
             {
                 case RUI_STATUS_OK:RUI_LOG_PRINTF("OTAA Join Start...\r\n");break;
-                case RUI_LORA_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is not found.\r\n");
+                case RUI_LORA_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                     rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
                     switch(app_lora_status.autosend_status)
                     {
@@ -276,7 +372,7 @@ void app_loop(void)
                         default:break;
                     } 
                     break;
-                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                default: RUI_LOG_PRINTF("ERROR: LORA_STATUS_ERROR %d\r\n",rui_return_status);
                     rui_lora_get_status(false,&app_lora_status); 
                     switch(app_lora_status.autosend_status)
                     {
@@ -330,7 +426,7 @@ void LoRaWANJoined_callback(uint32_t status)
     {
         JoinCnt = 0;
         IsJoiningflag = false;
-        RUI_LOG_PRINTF("[LoRa]:Joined Successed!\r\n");		
+        RUI_LOG_PRINTF("[LoRa]:Join Success\r\nOK\r\n");
         rui_gpio_rw(RUI_IF_WRITE,&Led_Green, low);
         rui_timer_start(&Led_Green_Timer);        
     }else 
@@ -349,40 +445,51 @@ void LoRaWANJoined_callback(uint32_t status)
         }
         else   //Join failed
         {
-            RUI_LOG_PRINTF("[LoRa]:Joined Failed! \r\n"); 
+            RUI_LOG_PRINTF("ERROR: RUI_AT_LORA_INFO_STATUS_JOIN_FAIL %d\r\n",RUI_AT_LORA_INFO_STATUS_JOIN_FAIL); 
 			rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
 			rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after send success
             JoinCnt=0;   
         }          
     }    
 }
-void LoRaWANSendsucceed_callback(RUI_MCPS_T status)
+void LoRaWANSendsucceed_callback(RUI_MCPS_T mcps_type,RUI_RETURN_STATUS status)
 {
-    switch( status )
+    if(sendfull == false)
     {
-        case RUI_MCPS_UNCONFIRMED:
+        autosend_flag = true;
+        return;
+    }
+
+    if(status == RUI_STATUS_OK)
+    {
+        switch( mcps_type )
         {
-            RUI_LOG_PRINTF("[LoRa]: Unconfirm data send OK\r\n");
-            break;
-        }
-        case RUI_MCPS_CONFIRMED:
-        {
-            RUI_LOG_PRINTF("[LoRa]: Confirm data send OK\r\n");
-            break;
-        }
-        case RUI_MCPS_PROPRIETARY:
-        {
-            RUI_LOG_PRINTF("[LoRa]: MCPS_PROPRIETARY\r\n");
-            break;
-        }
-        case RUI_MCPS_MULTICAST:
-        {
-            RUI_LOG_PRINTF("[LoRa]: MCPS_PROPRIETARY\r\n");
-            break;           
-        }
-        default:             
-            break;
-    }       
+            case RUI_MCPS_UNCONFIRMED:
+            {
+            RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_UNCONFIRMED send success\r\nOK\r\n");
+                break;
+            }
+            case RUI_MCPS_CONFIRMED:
+            {
+            RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_CONFIRMED send success\r\nOK\r\n");
+                break;
+            }
+            case RUI_MCPS_PROPRIETARY:
+            {
+            RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_PROPRIETARY send success\r\nOK\r\n");
+                break;
+            }
+            case RUI_MCPS_MULTICAST:
+            {
+            RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_MULTICAST send success\r\nOK\r\n");
+                break;           
+            }
+            default:             
+                break;
+        } 
+    }else RUI_LOG_PRINTF("[LoRa]: LORA_EVENT_ERROR %d\r\n", status);
+
+    sendfull = false;     
 	
     rui_gpio_rw(RUI_IF_WRITE,&Led_Blue, low);
     rui_timer_start(&Led_Blue_Timer); 
@@ -524,6 +631,7 @@ void main(void)
 		default: break;
 	}   
     RUI_LOG_PRINTF("\r\n");
+
     while(1)
     {       
         rui_lora_get_status(false,&app_lora_status);//The query gets the current status 
@@ -544,7 +652,10 @@ void main(void)
                     }       
                 }
 
-                app_loop();
+
+                if(!sample_status)app_loop();
+                else user_lora_send();
+
 				
                 break;
             case RUI_P2P:

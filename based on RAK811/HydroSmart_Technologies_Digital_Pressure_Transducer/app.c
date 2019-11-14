@@ -19,7 +19,7 @@ const uint8_t level[2]={0,1};
 volatile static bool autosend_flag = false;    //auto send flag
 static uint8_t a[80]={};    // Data buffer to be sent by lora
 bool IsJoiningflag= false;  //flag whether joining or not status
-bool sample_status = false;  //flag sensor sample record for print sensor data by AT command
+bool sample_flag = false;  //flag sensor sample record for print sensor data by AT command
 
 
 
@@ -58,7 +58,7 @@ void app_loop(void)
             a[sensor_data_cnt++]=((uint16_t)(P_PSI*100)>>8) & 0xff;
             a[sensor_data_cnt++]=((uint16_t)(P_PSI*100)) & 0xff;
 
-            sample_status = true;
+            sample_flag = true;
             RUI_LOG_PRINTF("\r\n");
             rui_return_status = rui_lora_send(8,a,sensor_data_cnt);
             switch(rui_return_status)
@@ -88,7 +88,7 @@ void app_loop(void)
             switch(rui_return_status)
             {
                 case RUI_STATUS_OK:RUI_LOG_PRINTF("OTAA Join Start...\r\n");break;
-                case RUI_LORA_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is not found.\r\n");
+                case RUI_LORA_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                     rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
                     switch(app_lora_status.autosend_status)
                     {
@@ -99,7 +99,7 @@ void app_loop(void)
                         default:break;
                     } 
                     break;
-                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                default: RUI_LOG_PRINTF("ERROR: LORA_STATUS_ERROR %d\r\n",rui_return_status);
                     rui_lora_get_status(false,&app_lora_status); 
                     switch(app_lora_status.autosend_status)
                     {
@@ -153,7 +153,7 @@ void LoRaWANJoined_callback(uint32_t status)
     {
         JoinCnt = 0;
         IsJoiningflag = false;
-        RUI_LOG_PRINTF("[LoRa]:Joined Successed!\r\n");
+        RUI_LOG_PRINTF("[LoRa]:Join Success\r\nOK\r\n");
         rui_lora_get_status(false,&app_lora_status);
         if(app_lora_status.autosend_status != RUI_AUTO_DISABLE)
         {
@@ -164,7 +164,7 @@ void LoRaWANJoined_callback(uint32_t status)
         if(JoinCnt<JOIN_MAX_CNT) // Join was not successful. Try to join again
         {
             JoinCnt++;
-            RUI_LOG_PRINTF("[LoRa]:Join retry Cnt:%d\n",JoinCnt);
+            RUI_LOG_PRINTF("[LoRa]:Join retry Cnt:%d\r\n",JoinCnt);
             rui_lora_get_status(false,&app_lora_status);
             if(app_lora_status.lora_dr > 0)
             {
@@ -175,7 +175,7 @@ void LoRaWANJoined_callback(uint32_t status)
         }
         else   //Join failed
         {
-            RUI_LOG_PRINTF("[LoRa]:Joined Failed! \r\n"); 
+            RUI_LOG_PRINTF("ERROR: RUI_AT_LORA_INFO_STATUS_JOIN_FAIL %d\r\n",RUI_AT_LORA_INFO_STATUS_JOIN_FAIL); 
 			rui_lora_get_status(false,&app_lora_status); 
             switch(app_lora_status.autosend_status)
             {
@@ -195,23 +195,22 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T status)
     {
         case RUI_MCPS_UNCONFIRMED:
         {
-            RUI_LOG_PRINTF("[LoRa]: Unconfirm data send OK\r\n");
+            RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_UNCONFIRMED send success\r\nOK\r\n");
             break;
         }
         case RUI_MCPS_CONFIRMED:
         {
-            RUI_LOG_PRINTF("[LoRa]: Confirm data send OK\r\n");
-
+            RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_CONFIRMED send success\r\nOK\r\n");
             break;
         }
         case RUI_MCPS_PROPRIETARY:
         {
-            RUI_LOG_PRINTF("[LoRa]: MCPS_PROPRIETARY\r\n");
+            RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_PROPRIETARY send success\r\nOK\r\n");
             break;
         }
         case RUI_MCPS_MULTICAST:
         {
-            RUI_LOG_PRINTF("[LoRa]: MCPS_PROPRIETARY\r\n");
+            RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_MULTICAST send success\r\nOK\r\n");
             break;           
         }
         default:             

@@ -29,7 +29,7 @@ TimerEvent_t Led_Blue_Timer;  //LoRa send out indicator light
 volatile static bool autosend_flag = false;    //auto send flag
 static uint8_t a[80]={};    // Data buffer to be sent by lora
 bool IsJoiningflag= false;  //flag whether joining or not status
-bool sample_status = false;  //sensor sample record
+bool sample_flag = false;  //sensor sample record
 
 
 
@@ -167,7 +167,7 @@ void app_loop(void)
 
 	        if(sensor_data_cnt != 0)
             {                    
-                sample_status = true;
+                sample_flag = true;
                 RUI_LOG_PRINTF("\r\n");
                 rui_return_status = rui_lora_send(8,a,sensor_data_cnt);
                 switch(rui_return_status)
@@ -202,7 +202,7 @@ void app_loop(void)
             switch(rui_return_status)
             {
                 case RUI_STATUS_OK:RUI_LOG_PRINTF("OTAA Join Start...\r\n");break;
-                case RUI_LORA_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is not found.\r\n");
+                case RUI_LORA_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                     rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
                     switch(app_lora_status.autosend_status)
                     {
@@ -213,7 +213,7 @@ void app_loop(void)
                         default:break;
                     } 
                     break;
-                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                default: RUI_LOG_PRINTF("ERROR: LORA_STATUS_ERROR %d\r\n",rui_return_status);
                     rui_lora_get_status(false,&app_lora_status); 
                     switch(app_lora_status.autosend_status)
                     {
@@ -267,7 +267,7 @@ void LoRaWANJoined_callback(uint32_t status)
     {
         JoinCnt = 0;
         IsJoiningflag = false;
-        RUI_LOG_PRINTF("[LoRa]:Joined Successed!\r\n");		
+        RUI_LOG_PRINTF("[LoRa]:Join Success\r\nOK\r\n");
         rui_gpio_rw(RUI_IF_WRITE,&Led_Green, low);
         rui_timer_start(&Led_Green_Timer);        
     }else 
@@ -286,7 +286,7 @@ void LoRaWANJoined_callback(uint32_t status)
         }
         else   //Join failed
         {
-            RUI_LOG_PRINTF("[LoRa]:Joined Failed! \r\n"); 
+            RUI_LOG_PRINTF("ERROR: RUI_AT_LORA_INFO_STATUS_JOIN_FAIL %d\r\n",RUI_AT_LORA_INFO_STATUS_JOIN_FAIL); 
 			rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
 			rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after send success
             JoinCnt=0;   
@@ -299,22 +299,22 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T status)
     {
         case RUI_MCPS_UNCONFIRMED:
         {
-            RUI_LOG_PRINTF("[LoRa]: Unconfirm data send OK\r\n");
+            RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_UNCONFIRMED send success\r\nOK\r\n");
             break;
         }
         case RUI_MCPS_CONFIRMED:
         {
-            RUI_LOG_PRINTF("[LoRa]: Confirm data send OK\r\n");
+            RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_CONFIRMED send success\r\nOK\r\n");
             break;
         }
         case RUI_MCPS_PROPRIETARY:
         {
-            RUI_LOG_PRINTF("[LoRa]: MCPS_PROPRIETARY\r\n");
+            RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_PROPRIETARY send success\r\nOK\r\n");
             break;
         }
         case RUI_MCPS_MULTICAST:
         {
-            RUI_LOG_PRINTF("[LoRa]: MCPS_PROPRIETARY\r\n");
+            RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_MULTICAST send success\r\nOK\r\n");
             break;           
         }
         default:             

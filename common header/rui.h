@@ -46,6 +46,12 @@ typedef enum{
  RUI_AT_UNSUPPORT,
  RUI_AT_PARAMETER_INVALID,
  RUI_AT_RW_FLASH_ERROR,
+ RUI_AT_GPIO_IRQ_DISABLE,
+ RUI_AT_BUS_INIT_FAIL,
+ RUI_AT_TIMER_FAIL,
+ RUI_AT_IIC_RW_ERROR,
+ RUI_AT_UART_SEND_ERROR,
+
  RUI_AT_SENSOR_OK=20,
  RUI_AT_BLE_STATUS_OK=40,
  RUI_AT_BLE_ERROR_INVALID_STATE=41,
@@ -62,7 +68,19 @@ typedef enum{
  RUI_AT_LORA_REGION_NOT_SUPPORTED,
  RUI_AT_LORA_DUTYCYCLE_RESTRICTED,
  RUI_AT_LORA_NO_CHANNEL_FOUND,
- RUI_AT_LORA_NO_FREE_CHANNEL_FOUND
+ RUI_AT_LORA_NO_FREE_CHANNEL_FOUND,
+ RUI_AT_LORA_INFO_STATUS_ERROR,
+ RUI_AT_LORA_INFO_STATUS_TX_TIMEOUT,
+ RUI_AT_LORA_INFO_STATUS_RX1_TIMEOUT,
+ RUI_AT_LORA_INFO_STATUS_RX2_TIMEOUT,
+ RUI_AT_LORA_INFO_STATUS_RX1_ERROR,
+ RUI_AT_LORA_INFO_STATUS_RX2_ERROR,
+ RUI_AT_LORA_INFO_STATUS_JOIN_FAIL,
+ RUI_AT_LORA_INFO_STATUS_DOWNLINK_REPEATED,
+ RUI_AT_LORA_INFO_STATUS_TX_DR_PAYLOAD_SIZE_ERROR,
+ RUI_AT_LORA_INFO_STATUS_DOWNLINK_TOO_MANY_FRAMES_LOSS,
+ RUI_AT_LORA_INFO_STATUS_ADDRESS_FAIL,
+ RUI_AT_LORA_INFO_STATUS_MIC_FAIL
 }RUI_AT_RESPONSE;
 
 
@@ -97,10 +115,20 @@ typedef enum{
  RUI_LORA_STATUS_REGION_NOT_SUPPORTED,
  RUI_LORA_STATUS_DUTYCYCLE_RESTRICTED,
  RUI_LORA_STATUS_NO_CHANNEL_FOUND,
- RUI_LORA_STATUS_NO_FREE_CHANNEL_FOUND
- 
+ RUI_LORA_STATUS_NO_FREE_CHANNEL_FOUND,
+ RUI_LORA_EVENT_INFO_STATUS_ERROR,
+ RUI_LORA_EVENT_INFO_STATUS_TX_TIMEOUT,
+ RUI_LORA_EVENT_INFO_STATUS_RX1_TIMEOUT,
+ RUI_LORA_EVENT_INFO_STATUS_RX2_TIMEOUT,
+ RUI_LORA_EVENT_INFO_STATUS_RX1_ERROR, 
+ RUI_LORA_EVENT_INFO_STATUS_RX2_ERROR,
+ RUI_LORA_EVENT_INFO_STATUS_JOIN_FAIL,
+ RUI_LORA_EVENT_INFO_STATUS_DOWNLINK_REPEATED,
+ RUI_LORA_EVENT_INFO_STATUS_TX_DR_PAYLOAD_SIZE_ERROR,
+ RUI_LORA_EVENT_INFO_STATUS_DOWNLINK_TOO_MANY_FRAMES_LOSS,
+ RUI_LORA_EVENT_INFO_STATUS_ADDRESS_FAIL,
+ RUI_LORA_EVENT_INFO_STATUS_MIC_FAIL
 }RUI_RETURN_STATUS;
-
 
 typedef struct RUI_RECEIVE
 {
@@ -919,7 +947,7 @@ RUI_RETURN_STATUS rui_lorajoin_register_callback(lorajoin callback);
  * @param       lorasend callback: the callback function for LoRaWAN send complete.
                 RUI_MCPS_T type: send packet type.
 ***************************************************************************************/
-typedef void (*lorasend)(RUI_MCPS_T type);
+typedef void (*lorasend)(RUI_MCPS_T type,RUI_RETURN_STATUS  status);
 RUI_RETURN_STATUS rui_lorasend_complete_register_callback(lorasend callback);
 
 /***************************************************************************************
@@ -1042,6 +1070,13 @@ void  rui_at_response(bool is_success, uint8_t *p_msg, uint16_t ret_code);
 typedef void (*interrupt_callback)(void);
 RUI_RETURN_STATUS rui_gpio_interrupt(bool control, RUI_GPIO_ST st, RUI_GPIO_INTERRUPT_EDGE edge, RUI_GPIO_INTERRUPT_PRIORITY pro,interrupt_callback callback);
 
+/***************************************************************************************
+ * @brief       This API is used to get current data rate and payloadsize.
+ * @return      RUI_RETURN_STATUS
+ * @param       uint8_t* dr: current DR
+                uint16_t* lengthM:Maximum acceptable size 
+***************************************************************************************/
+RUI_RETURN_STATUS rui_lora_get_dr(uint8_t* dr, uint16_t* lengthM);
 
 #ifdef SOFTDEVICE_PRESENT
 #define RUI_LOG_PRINTF(fmt, args...)  NRF_LOG_INFO(fmt, ##args)
