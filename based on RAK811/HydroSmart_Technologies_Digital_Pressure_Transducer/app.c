@@ -18,8 +18,11 @@ const uint8_t level[2]={0,1};
 
 volatile static bool autosend_flag = false;    //auto send flag
 static uint8_t a[80]={};    // Data buffer to be sent by lora
+static uint8_t sensor_data_cnt=0;  //send data counter by LoRa 
 bool IsJoiningflag= false;  //flag whether joining or not status
 bool sample_flag = false;  //flag sensor sample record for print sensor data by AT command
+bool sample_status = false;  //current whether sample sensor completely
+bool sendfull = false;  //flag whether send all sensor data 
 
 
 
@@ -36,34 +39,75 @@ void bsp_init(void)
     Pressure_init();
 }
 
-double P_PSI,Temperature;
-void app_loop(void)
+uint8_t lpp_cnt=0;  //record lpp package count
+typedef struct 
+{   uint8_t startcnt;
+    uint8_t size;
+}lpp_data_t;
+lpp_data_t lpp_data[10];
+void user_lora_send(void)
 {
-    static uint8_t sensor_data_cnt=0;  //send data counter by LoRa
-    rui_lora_get_status(false,&app_lora_status);
-    if(app_lora_status.IsJoined)  //if LoRaWAN is joined
+    uint8_t dr;
+    uint16_t ploadsize;
+    static uint16_t temp_cnt=0;
+    uint16_t temp_size=0;  //send package size 
+    uint8_t* Psend_start;
+    if(autosend_flag)
     {
-        if(autosend_flag)
+        autosend_flag = false;
+        rui_lora_get_dr(&dr,&ploadsize);
+        UartPrint("lpp_cnt:%d, sensor_data_cnt:%d ,DR:%d,Msize:%d\r\n",lpp_cnt,sensor_data_cnt,dr,ploadsize);
+        if(ploadsize < sensor_data_cnt)
         {
-            autosend_flag=false;             
-            rui_delay_ms(5);               
-            Get_Pressure(&P_PSI,&Temperature);
-
-            a[sensor_data_cnt++]=0x02;
-            a[sensor_data_cnt++]=0x67;
-            a[sensor_data_cnt++]=((uint16_t)(Temperature*10)>>8) & 0xff;
-            a[sensor_data_cnt++]=((uint16_t)(Temperature*10)) & 0xff;
-            a[sensor_data_cnt++]=0x03;
-            a[sensor_data_cnt++]=0x02;
-            a[sensor_data_cnt++]=((uint16_t)(P_PSI*100)>>8) & 0xff;
-            a[sensor_data_cnt++]=((uint16_t)(P_PSI*100)) & 0xff;
-
-            sample_flag = true;
-            RUI_LOG_PRINTF("\r\n");
+            Psend_start = &a[lpp_data[temp_cnt].startcnt];                          
+            for(;temp_cnt <= lpp_cnt; temp_cnt++)
+            {
+                UartPrint("lpp_cnt:%d, temp_size:%d,lpp_data[%d].size:%d,Msize:%d\r\n",lpp_cnt,temp_size,temp_cnt,lpp_data[temp_cnt].size,ploadsize);
+                if(ploadsize < (temp_size + lpp_data[temp_cnt].size))
+                {                                                              
+                    rui_return_status = rui_lora_send(8,Psend_start,temp_size);
+                    switch(rui_return_status)
+                    {
+                        case RUI_STATUS_OK:return;
+                        default: RUI_LOG_PRINTF("[LoRa]: send error %d\r\n",rui_return_status);  
+                            autosend_flag = true;                                      
+                            break;
+                    }                
+                }else
+                {                   
+                    if(temp_cnt == lpp_cnt)
+                    {
+                        rui_return_status = rui_lora_send(8,Psend_start,temp_size);
+                        switch(rui_return_status)
+                        {
+                            case RUI_STATUS_OK:RUI_LOG_PRINTF("[LoRa]: send out\r\n");
+                                sample_status = false;
+                                sendfull = true;
+                                lpp_cnt = 0;
+                                temp_cnt = 0;
+                                sensor_data_cnt=0; 
+                                return;
+                                break;
+                            default: RUI_LOG_PRINTF("[LoRa]: send error %d\r\n",rui_return_status);  
+                                autosend_flag = true;                                      
+                                break;
+                        } 
+                    }else 
+                    {
+                        temp_size += lpp_data[temp_cnt].size; 
+                    }
+                }                   
+            }
+        }else
+        {
             rui_return_status = rui_lora_send(8,a,sensor_data_cnt);
             switch(rui_return_status)
             {
                 case RUI_STATUS_OK:RUI_LOG_PRINTF("[LoRa]: send out\r\n");
+                    sample_status = false;
+                    sendfull = true;
+                    lpp_cnt = 0;
+                    sensor_data_cnt=0; 
                     break;
                 default: RUI_LOG_PRINTF("[LoRa]: send error %d\r\n",rui_return_status);
                     rui_lora_get_status(false,&app_lora_status); 
@@ -75,9 +119,51 @@ void app_loop(void)
                             break;
                         default:break;
                     }
-					break;
-            }                 
-            sensor_data_cnt=0;                       
+                    break;
+            }               
+        }
+    }                    
+}
+
+double P_PSI,Temperature;
+void app_loop(void)
+{
+    rui_lora_get_status(false,&app_lora_status);
+    if(app_lora_status.IsJoined)  //if LoRaWAN is joined
+    {
+        if(autosend_flag)
+        {
+            autosend_flag=false;             
+            rui_delay_ms(5);               
+            Get_Pressure(&P_PSI,&Temperature);
+            lpp_data[lpp_cnt].startcnt = sensor_data_cnt;
+            a[sensor_data_cnt++]=0x02;
+            a[sensor_data_cnt++]=0x67;
+            a[sensor_data_cnt++]=((uint16_t)(Temperature*10)>>8) & 0xff;
+            a[sensor_data_cnt++]=((uint16_t)(Temperature*10)) & 0xff;
+            lpp_data[lpp_cnt].size = sensor_data_cnt - lpp_data[lpp_cnt].startcnt;	
+            lpp_cnt++;
+
+            lpp_data[lpp_cnt].startcnt = sensor_data_cnt;
+            a[sensor_data_cnt++]=0x03;
+            a[sensor_data_cnt++]=0x02;
+            a[sensor_data_cnt++]=((uint16_t)(P_PSI*100)>>8) & 0xff;
+            a[sensor_data_cnt++]=((uint16_t)(P_PSI*100)) & 0xff;
+            lpp_data[lpp_cnt].size = sensor_data_cnt - lpp_data[lpp_cnt].startcnt;	
+            lpp_cnt++;
+
+            if(sensor_data_cnt != 0)
+            { 
+                sample_status = true;                   
+                sample_flag = true;
+                RUI_LOG_PRINTF("\r\n");
+                autosend_flag = true;
+                user_lora_send();                               
+            }	
+            else 
+            {                
+                rui_lora_set_send_interval(RUI_AUTO_DISABLE,0);  //stop it auto send data if no sensor data.
+            }                     
         }
     }else if(IsJoiningflag == false)
     {
@@ -125,9 +211,10 @@ void app_loop(void)
 void LoRaReceive_callback(RUI_RECEIVE_T* Receive_datapackage)
 {
     char hex_str[3] = {0}; 
-    RUI_LOG_PRINTF("at+recv=%d,%d,%d,%d:", Receive_datapackage->Port, Receive_datapackage->Rssi, Receive_datapackage->Snr, Receive_datapackage->BufferSize);   
+    RUI_LOG_PRINTF("at+recv=%d,%d,%d,%d", Receive_datapackage->Port, Receive_datapackage->Rssi, Receive_datapackage->Snr, Receive_datapackage->BufferSize);   
     
     if ((Receive_datapackage->Buffer != NULL) && Receive_datapackage->BufferSize) {
+        RUI_LOG_PRINTF(":");
         for (int i = 0; i < Receive_datapackage->BufferSize; i++) {
             sprintf(hex_str, "%02x", Receive_datapackage->Buffer[i]);
             RUI_LOG_PRINTF("%s", hex_str); 
@@ -189,44 +276,56 @@ void LoRaWANJoined_callback(uint32_t status)
         }          
     }    
 }
-void LoRaWANSendsucceed_callback(RUI_MCPS_T status)
+void LoRaWANSendsucceed_callback(RUI_MCPS_T mcps_type,RUI_RETURN_STATUS status)
 {
-    switch( status )
+    if(sendfull == false)
     {
-        case RUI_MCPS_UNCONFIRMED:
+        autosend_flag = true;
+        return;
+    }
+
+    if(status == RUI_STATUS_OK)
+    {
+        switch( mcps_type )
         {
+            case RUI_MCPS_UNCONFIRMED:
+            {
             RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_UNCONFIRMED send success\r\nOK\r\n");
-            break;
-        }
-        case RUI_MCPS_CONFIRMED:
-        {
+                break;
+            }
+            case RUI_MCPS_CONFIRMED:
+            {
             RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_CONFIRMED send success\r\nOK\r\n");
-            break;
-        }
-        case RUI_MCPS_PROPRIETARY:
-        {
+                break;
+            }
+            case RUI_MCPS_PROPRIETARY:
+            {
             RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_PROPRIETARY send success\r\nOK\r\n");
-            break;
-        }
-        case RUI_MCPS_MULTICAST:
-        {
+                break;
+            }
+            case RUI_MCPS_MULTICAST:
+            {
             RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_MULTICAST send success\r\nOK\r\n");
-            break;           
-        }
-        default:             
-            break;
-    }       
+                break;           
+            }
+            default:             
+                break;
+        } 
+    }else RUI_LOG_PRINTF("[LoRa]: LORA_EVENT_ERROR %d\r\n", status);
+
+    sendfull = false;     
+	
     rui_lora_get_status(false,&app_lora_status);//The query gets the current status 
     switch(app_lora_status.autosend_status)
     {
         case RUI_AUTO_ENABLE_SLEEP:rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after send success
             rui_delay_ms(5);  
-
             break;
         case RUI_AUTO_ENABLE_NORMAL:rui_lora_set_send_interval(RUI_AUTO_ENABLE_NORMAL,app_lora_status.lorasend_interval);  //start autosend_timer after send success
             break;
         default:break;
-    } 
+    }  
+
 }
 
 /*******************************************************************************************
@@ -238,7 +337,15 @@ void rui_uart_recv(RUI_UART_DEF uart_def, uint8_t *pdata, uint16_t len)
     switch(uart_def)
     {
         case RUI_UART1://process code if RUI_UART1 work at RUI_UART_UNVARNISHED
-            rui_lora_send(8,pdata,len);  
+            rui_lora_get_status(false,&app_lora_status);
+            if(app_lora_status.IsJoined)  //if LoRaWAN is joined
+            {
+                rui_lora_send(8,pdata,len);
+            }else
+            {
+                RUI_LOG_PRINTF("ERROR: RUI_AT_LORA_NO_NETWORK_JOINED %d",RUI_AT_LORA_NO_NETWORK_JOINED);
+            }
+             
             break;
         case RUI_UART3://process code if RUI_UART3 received data ,the len is always 1
             /*****************************************************************************
@@ -342,7 +449,10 @@ void main(void)
                     }       
                 }
 
-                app_loop();
+
+                if(!sample_status)app_loop();
+                else user_lora_send();
+
 				
                 break;
             case RUI_P2P:

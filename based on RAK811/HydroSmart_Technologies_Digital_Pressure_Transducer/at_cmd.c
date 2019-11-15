@@ -391,7 +391,7 @@ static void lora_send(int argc, char *argv[])
 
 static void atcmd_help(int argc, char *argv[])
 {
-    RUI_LOG_PRINTF("OK.\r\n*************************************************\r\n===============AT Commands List==================\r\n");
+    RUI_LOG_PRINTF("OK\r\n*************************************************\r\n===============AT Commands List==================\r\n");
     RUI_LOG_PRINTF("Device AT commands:\r\n");
     RUI_LOG_PRINTF("  at+version\r\n");
     RUI_LOG_PRINTF("  at+help\r\n");

@@ -134,9 +134,10 @@ void app_loop(void)
 void LoRaReceive_callback(RUI_RECEIVE_T* Receive_datapackage)
 {
     char hex_str[3] = {0}; 
-    RUI_LOG_PRINTF("at+recv=%d,%d,%d,%d:", Receive_datapackage->Port, Receive_datapackage->Rssi, Receive_datapackage->Snr, Receive_datapackage->BufferSize);   
+    RUI_LOG_PRINTF("at+recv=%d,%d,%d,%d", Receive_datapackage->Port, Receive_datapackage->Rssi, Receive_datapackage->Snr, Receive_datapackage->BufferSize);   
     
     if ((Receive_datapackage->Buffer != NULL) && Receive_datapackage->BufferSize) {
+        RUI_LOG_PRINTF(":");
         for (int i = 0; i < Receive_datapackage->BufferSize; i++) {
             sprintf(hex_str, "%02x", Receive_datapackage->Buffer[i]);
             RUI_LOG_PRINTF("%s", hex_str); 
@@ -246,7 +247,15 @@ void rui_uart_recv(RUI_UART_DEF uart_def, uint8_t *pdata, uint16_t len)
     switch(uart_def)
     {
         case RUI_UART1://process code if RUI_UART1 work at RUI_UART_UNVARNISHED
-            rui_lora_send(8,pdata,len);  
+            rui_lora_get_status(false,&app_lora_status);
+            if(app_lora_status.IsJoined)  //if LoRaWAN is joined
+            {
+                rui_lora_send(8,pdata,len);
+            }else
+            {
+                RUI_LOG_PRINTF("ERROR: RUI_AT_LORA_NO_NETWORK_JOINED %d",RUI_AT_LORA_NO_NETWORK_JOINED);
+            }
+             
             break;
         case RUI_UART3://process code if RUI_UART3 received data ,the len is always 1
             /*****************************************************************************

@@ -323,7 +323,7 @@ static uint32_t handle_device_config(RUI_LORA_STATUS_T *config, int argc, char *
                 rui_return_status = rui_uart_mode_config(atoi(argv[1]),atoi(argv[2]));
                 switch(rui_return_status)
                 {
-                    case RUI_STATUS_OK:RUI_LOG_PRINTF("Uart mode configure success.\r\nOK\r\n");                        
+                    case RUI_STATUS_OK:RUI_LOG_PRINTF("Uart transparent mode configure success\r\nOK\r\n");                        
                         break;
                     case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                         return FAIL;
@@ -898,7 +898,7 @@ static uint32_t  handle_lorap2p_config(RUI_LORA_STATUS_T *config, int argc, char
 extern bool sample_flag ;
 static uint32_t handle_device_status(void)
 {
-    RUI_LOG_PRINTF("OK.\r\n*************************************************\r\n===============Device Status List================\r\n"); 
+    RUI_LOG_PRINTF("OK\r\n*************************************************\r\n===============Device Status List================\r\n"); 
 
     RUI_LOG_PRINTF("Board Core:  RAK811\r\n");
     RUI_LOG_PRINTF("MCU:  STM32L151CB_A\r\n");   
