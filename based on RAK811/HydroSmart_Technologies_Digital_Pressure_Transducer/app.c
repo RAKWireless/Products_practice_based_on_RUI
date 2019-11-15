@@ -56,13 +56,11 @@ void user_lora_send(void)
     {
         autosend_flag = false;
         rui_lora_get_dr(&dr,&ploadsize);
-        UartPrint("lpp_cnt:%d, sensor_data_cnt:%d ,DR:%d,Msize:%d\r\n",lpp_cnt,sensor_data_cnt,dr,ploadsize);
         if(ploadsize < sensor_data_cnt)
         {
             Psend_start = &a[lpp_data[temp_cnt].startcnt];                          
             for(;temp_cnt <= lpp_cnt; temp_cnt++)
             {
-                UartPrint("lpp_cnt:%d, temp_size:%d,lpp_data[%d].size:%d,Msize:%d\r\n",lpp_cnt,temp_size,temp_cnt,lpp_data[temp_cnt].size,ploadsize);
                 if(ploadsize < (temp_size + lpp_data[temp_cnt].size))
                 {                                                              
                     rui_return_status = rui_lora_send(8,Psend_start,temp_size);
