@@ -78,44 +78,89 @@ void StrToHex(char *pbDest, char *pbSrc, int nLen)
     }
 }
 
-void uart_put_string(uint8_t *msg)
+void HexToStr(char *pbDest, char *pbSrc, int nLen)
+{
+    char ddl,ddh;
+    int i;
+    
+    for (i=0; i<nLen; i++)
+    {
+        ddh = 48 + pbSrc[i] / 16;
+        ddl = 48 + pbSrc[i] % 16;
+        if (ddh > 57) ddh = ddh + 7;
+        if (ddl > 57) ddl = ddl + 7;
+        pbDest[i*2] = ddh;
+        pbDest[i*2+1] = ddl;
+    }
+    
+    pbDest[nLen*2] = '\0';
+}
+
+void at_response_string(uint8_t *msg)
 {
     rui_uart_send(RUI_UART1, msg, strlen(msg));
+    RUI_LOG_PRINTF("%s", msg);
+}
+
+void at_response_param_invalid(uint8_t *at_rsp)
+{
+    strcat(at_rsp, "ERROR:RUI_AT_PARAMETER_INVALID");
+    rui_at_response(false, at_rsp, RUI_AT_PARAMETER_INVALID); 
+}
+
+bool at_check_param_length(uint8_t *p_data, uint16_t len)
+{
+    uint16_t param_len = strlen(p_data);
+
+    if (param_len < len){
+        return false;
+    }
+    else{
+        if ((p_data[len] != '\0') && (p_data[len] != '\r'))
+        {
+            return false;
+        }
+    }
+
+    return true;
+
 }
 
 void at_parse(char *cmd)
 {
     char  *ptr = NULL;
     uint8_t send_data[256] = {0};
+    uint8_t at_rsp[1536] = {0};
     uint8_t lora_port[5] = {0};
     uint8_t sleep_data[10] = {0};
     uint8_t index = 0;
+    uint32_t param_len = 0;
     uint32_t err_code = 0;
     uint8_t lora_config_data[10] = {0};
-    uint8_t msg_flash_success[]="Config success.\r\n";
-    uint8_t msg_flash_failed[]="Config failed.\r\n";
-    RUI_LOG_PRINTF("at_parse: %s",cmd);
 
-    if(cmd[0] == 0)
+    if((cmd[0] == 0) || (strlen(cmd)>128))
     {
         return;
     }
+
+    sprintf(at_rsp,"%s",cmd);
 
     // at+version
     if(strstr(cmd,"at+version")!= 0)
     {
         char ver[48]="Firmware Version: RUI v";
         strcat(ver, RUI_VERSION);
-        RUI_LOG_PRINTF("%s", ver);
-        rui_at_response(true, ver, RAK_OK);
+        sprintf(at_rsp+strlen(at_rsp), "%s\r\n", ver);
+        rui_at_response(true, at_rsp, RUI_AT_OK);
+
         return;
     }
 
     // at+set_config=device:sleep:1
     if(strstr(cmd,"at+set_config=device:sleep:1")!= 0)
     {
-        RUI_LOG_PRINTF("Device wil go to sleep.");
-        rui_at_response(true, "Device will go to sleep.", RAK_OK);
+        strcat(at_rsp, "Go to sleep.\r\n");
+        rui_at_response(true, at_rsp, RUI_AT_OK);
 
         if(power_flag == 0)
         {
@@ -130,204 +175,181 @@ void at_parse(char *cmd)
     {
         rui_device_sleep(0);
         power_flag = 0;
-        RUI_LOG_PRINTF(true, NULL, RAK_OK);
+
+        
+        strcat(at_rsp, "Wake up.\r\n");
+        rui_at_response(true, at_rsp, RUI_AT_OK);
         return;
     }
 
     // at+set_config=device:restart
     if(strstr(cmd,"at+set_config=device:restart")!= NULL)
     {
-        uint8_t msg[64];
+        rui_at_response(true, at_rsp, RUI_AT_OK);
 
-        sprintf(msg, "%s", "Device will Reset after 3s...\r\n");
-        RUI_LOG_PRINTF("%s", msg);
-        rui_uart_send(RUI_UART1, msg, strlen(msg));
-        delay_ms(1000);
-
-        sprintf(msg, "Device will Reset after 2s...\r\n");
-        RUI_LOG_PRINTF("%s", msg);
-        rui_uart_send(RUI_UART1, msg, strlen(msg));
-        delay_ms(1000);
-
-        sprintf(msg, "Device will Reset after 1s...\r\n");
-        RUI_LOG_PRINTF("%s", msg);
-        rui_uart_send(RUI_UART1, msg, strlen(msg));
-        delay_ms(1000);
-
-        rui_device_reset();
-        return;
-    }
-
-    // at+get_config=device:status
-    if(strstr(cmd,"at+get_config=device:status")!= NULL)
-    {
-        memset(send_data,0,256);
-        rui_at_response(true, send_data, RAK_OK);
+        rui_delay_ms(50);
+		rui_device_reset();
         return;
     }
 
     // at+set_config=lora:dev_eui:XXXX
-    if(strstr(cmd,"at+set_config=lora:dev_eui")!= NULL)
+    if(strstr(cmd,"at+set_config=lora:dev_eui:")!= NULL)
     {
         uint8_t dev_eui[8];
-        ptr = NULL;
-        index = 0;
-        ptr = strstr(cmd,"dev_eui");
-        for(index; index<8; index++)
+        ptr = strstr(cmd,"dev_eui:");
+        ptr += 8;
+
+        if (false == at_check_param_length(ptr, 16))
         {
-            ptr++;
+            at_response_param_invalid(at_rsp);
+            return ;
         }
-        index = 0;
-        memset(g_rui_cfg_t.g_lora_cfg_t.dev_eui,0,8);
-        for(ptr; *ptr !='\0'; ptr++)
-        {
-            memset(lora_config_data,0,10);
-            lora_config_data[0] = *ptr;
-            ptr++;
-            lora_config_data[1] = *ptr;
-            StrToHex(&(dev_eui[index]),lora_config_data,2);
-            index++;
-        }
+
+        StrToHex(dev_eui, ptr, 16);
         err_code = rui_lora_set_dev_eui(dev_eui);
-        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
-        else { rui_at_response(true, msg_flash_success, RAK_OK); }
+        if (err_code != RUI_STATUS_OK) {
+            strcat(at_rsp, "ERROR:RUI_AT_RW_FLASH_ERROR");
+            rui_at_response(false, at_rsp, RUI_AT_RW_FLASH_ERROR); 
+        }
+        else {
+            strcat(at_rsp, "LoRa dev_eui configure success\r\n");
+            rui_at_response(true, at_rsp, RUI_AT_OK); 
+        }
         return;
     }
 
     // at+set_config=lora:app_eui:XXXX
-    if(strstr(cmd,"at+set_config=lora:app_eui")!= NULL)
+    if(strstr(cmd,"at+set_config=lora:app_eui:")!= NULL)
     {
         uint8_t app_eui[8];
-        ptr = NULL;
-        index = 0;
-        ptr = strstr(cmd,"app_eui");
-        for(index; index<8; index++)
+        ptr = strstr(cmd,"app_eui:");
+        ptr+=8;
+
+        if (false == at_check_param_length(ptr, 16))
         {
-            ptr++;
+            at_response_param_invalid(at_rsp);
+            return ;
         }
-        index = 0;
-        memset(g_rui_cfg_t.g_lora_cfg_t.app_eui,0,8);
-        for(ptr; *ptr !='\0'; ptr++)
-        {
-            memset(lora_config_data,0,10);
-            lora_config_data[0] = *ptr;
-            ptr++;
-            lora_config_data[1] = *ptr;
-            StrToHex(&(app_eui[index]),lora_config_data,2);
-            index++;
-        }
+
+        StrToHex(app_eui, ptr, 16);
         err_code = rui_lora_set_app_eui(app_eui);
-        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
-        else { rui_at_response(true, msg_flash_success, RAK_OK); }
+        if (err_code != RUI_STATUS_OK) {
+            strcat(at_rsp, "ERROR:RUI_AT_RW_FLASH_ERROR");
+            rui_at_response(false, at_rsp, RUI_AT_RW_FLASH_ERROR); 
+        }
+        else {
+            strcat(at_rsp, "LoRa app_eui configure success\r\n");
+            rui_at_response(true, at_rsp, RUI_AT_OK); 
+        }
         return;
     }
 
     // at+set_config=lora:app_key:XXXX
-    if(strstr(cmd,"at+set_config=lora:app_key")!= NULL)
+    if(strstr(cmd,"at+set_config=lora:app_key:")!= NULL)
     {
         uint8_t app_key[16];
-        ptr = NULL;
-        index = 0;
-        ptr = strstr(cmd,"app_key");
-        for(index; index<8; index++)
+        ptr = strstr(cmd,"app_key:");
+        ptr += 8;
+
+        if (false == at_check_param_length(ptr, 32))
         {
-            ptr++;
+            at_response_param_invalid(at_rsp);
+            return ;
         }
-        index = 0;
-        memset(g_rui_cfg_t.g_lora_cfg_t.app_key,0,16);
-        for(ptr; *ptr !='\0'; ptr++)
-        {
-            memset(lora_config_data,0,10);
-            lora_config_data[0] = *ptr;
-            ptr++;
-            lora_config_data[1] = *ptr;
-            StrToHex(&(app_key[index]),lora_config_data,2);
-            index++;
-        }
+
+        StrToHex(app_key, ptr, 32);
         err_code = rui_lora_set_app_key(app_key);
-        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
-        else { rui_at_response(true, msg_flash_success, RAK_OK); }
+        if (err_code != RUI_STATUS_OK) {
+            strcat(at_rsp, "ERROR:RUI_AT_RW_FLASH_ERROR");
+            rui_at_response(false, at_rsp, RUI_AT_RW_FLASH_ERROR); 
+        }
+        else {
+            strcat(at_rsp, "LoRa app_key configure success\r\n");
+            rui_at_response(true, at_rsp, RUI_AT_OK); 
+        }
         return;
     }
 
     // at+set_config=lora:dev_addr:XXXX
-    if(strstr(cmd,"at+set_config=lora:dev_addr")!= NULL)
+    if(strstr(cmd,"at+set_config=lora:dev_addr:")!= NULL)
     {
-        ptr = NULL;
-        uint8_t i = 0;
-        index = 0;
-        memset(lora_config_data,0,10);
-        ptr = strstr(cmd,"dev_addr");
-        for(index; index<9; index++)
+        ptr = strstr(cmd,"dev_addr:");
+        ptr += 9;
+
+        if (false == at_check_param_length(ptr, 8))
         {
-            ptr++;
+            at_response_param_invalid(at_rsp);
+            return ;
         }
-        index = 0;
-        g_rui_cfg_t.g_lora_cfg_t.dev_addr = 0;
-        for(ptr; *ptr !='\0'; ptr++)
+
+        for(index=0; index<8; index++)
         {
-            lora_config_data[i++] = *ptr;
+            lora_config_data[index] = *ptr;
+            ptr++;
 
         }
+
         err_code = rui_lora_set_dev_addr(lora_config_data);
-        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
-        else { rui_at_response(true, msg_flash_success, RAK_OK); }
+        if (err_code != RUI_STATUS_OK) {
+            strcat(at_rsp, "ERROR:RUI_AT_RW_FLASH_ERROR");
+            rui_at_response(false, at_rsp, RUI_AT_RW_FLASH_ERROR); 
+        }
+        else { 
+            strcat(at_rsp, "LoRa dev_addr configure success\r\n");
+            rui_at_response(true, at_rsp, RUI_AT_OK); 
+        }
         return;
     }
     
     // at+set_config=lora:apps_key:XXXX
-    if(strstr(cmd,"at+set_config=lora:apps_key")!= NULL)
+    if(strstr(cmd,"at+set_config=lora:apps_key:")!= NULL)
     {
         uint8_t appskey[16];
-        ptr = NULL;
-        index = 0;
-        ptr = strstr(cmd,"apps_key");
-        for(index; index<9; index++)
+        ptr = strstr(cmd,"apps_key:");
+        ptr+=9;
+
+        if (false == at_check_param_length(ptr, 32))
         {
-            ptr++;
+            at_response_param_invalid(at_rsp);
+            return ;
         }
-        index = 0;
-        memset(g_rui_cfg_t.g_lora_cfg_t.appskey,0,16);
-        for(ptr; *ptr !='\0'; ptr++)
-        {
-            memset(lora_config_data,0,10);
-            lora_config_data[0] = *ptr;
-            ptr++;
-            lora_config_data[1] = *ptr;
-            StrToHex(&(appskey[index]),lora_config_data,2);
-            index++;
-        }
+
+        StrToHex(appskey, ptr, 32);
         err_code = rui_lora_set_apps_key(appskey);
-        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
-        else { rui_at_response(true, msg_flash_success, RAK_OK); }
+        if (err_code != RUI_STATUS_OK) {
+            strcat(at_rsp, "ERROR:RUI_AT_RW_FLASH_ERROR");
+            rui_at_response(false, at_rsp, RUI_AT_RW_FLASH_ERROR); 
+        }
+        else { 
+            strcat(at_rsp, "LoRa apps_key configure success\r\n");
+            rui_at_response(true, at_rsp, RUI_AT_OK); 
+        }
         return;
     }
     
     // at+set_config=lora:nwkskey:XXXX
-    if(strstr(cmd,"at+set_config=lora:nwks_key")!= NULL)
+    if(strstr(cmd,"at+set_config=lora:nwks_key:")!= NULL)
     {
         uint8_t nwkskey[16];
-        ptr = NULL;
-        index = 0;
-        ptr = strstr(cmd,"nwks_key");
-        for(index; index<9; index++)
+        ptr = strstr(cmd,"nwks_key:");
+        ptr += 9;
+
+        if (false == at_check_param_length(ptr, 32))
         {
-            ptr++;
+            at_response_param_invalid(at_rsp);
+            return ;
         }
-        index = 0;
-        memset(g_rui_cfg_t.g_lora_cfg_t.nwkskey,0,16);
-        for(ptr; *ptr !='\0'; ptr++)
-        {
-            memset(lora_config_data,0,10);
-            lora_config_data[0] = *ptr;
-            ptr++;
-            lora_config_data[1] = *ptr;
-            StrToHex(&(nwkskey[index]),lora_config_data,2);
-            index++;
-        }
+
+        StrToHex(nwkskey, ptr, 32);
         err_code = rui_lora_set_nwks_key(nwkskey);
-        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
-        else { rui_at_response(true, msg_flash_success, RAK_OK); }
+        if (err_code != RUI_STATUS_OK) {
+            strcat(at_rsp, "ERROR:RUI_AT_RW_FLASH_ERROR");
+            rui_at_response(false, at_rsp, RUI_AT_RW_FLASH_ERROR); 
+        }
+        else { 
+            strcat(at_rsp, "LoRa nwks_key configure success\r\n");
+            rui_at_response(true, at_rsp, RUI_AT_OK); 
+        }
         return;
     }
     
@@ -340,9 +362,21 @@ void at_parse(char *cmd)
         ptr += 7;
 
         region = rui_lora_region_convert(ptr);
+        if (region == 0xFF)
+        {
+            at_response_param_invalid(at_rsp);
+            return ;
+        }
         err_code = rui_lora_set_region(region);
-        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
-        else { rui_at_response(true, msg_flash_success, RAK_OK); }
+        if (err_code != RUI_STATUS_OK) {
+            strcat(at_rsp, "ERROR:RUI_AT_RW_FLASH_ERROR");
+            rui_at_response(false, at_rsp, RUI_AT_RW_FLASH_ERROR); 
+        }
+        else { 
+            strcat(at_rsp, "Selected LoRaWAN 1.0.2 Region:");
+            strcat(at_rsp, ptr);
+            rui_at_response(true, at_rsp, RUI_AT_OK); 
+        }
         return;
     }
     
@@ -356,22 +390,56 @@ void at_parse(char *cmd)
         {
             join_mode = RUI_OTAA;
         }
-        else
+        else if (strstr(cmd,"join_mode:1")!=NULL)
         {
             join_mode = RUI_ABP;
         }
+        else
+        {
+            at_response_param_invalid(at_rsp);
+            return ;
+        }
 
         err_code = rui_lora_set_join_mode(join_mode);
-        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
-        else { rui_at_response(true, msg_flash_success, RAK_OK); }
+        if (err_code != RUI_STATUS_OK) {
+            strcat(at_rsp, "ERROR:RUI_AT_RW_FLASH_ERROR");
+            rui_at_response(false, at_rsp, RUI_AT_RW_FLASH_ERROR); 
+        }
+        else { 
+            strcat(at_rsp, "LoRa join mode configure success\r\n");
+            rui_at_response(true, at_rsp, RUI_AT_OK); 
+        }
         return;
     }
     
     // at+join
     if(strstr(cmd,"at+join")!= NULL)
     {
+        if (RUI_OTAA == g_rui_cfg_t.g_lora_cfg_t.join_mode)
+        {
+            strcat(at_rsp, "OTAA:");
+            strcat(at_rsp, "\r\nDevEui:");
+            HexToStr(at_rsp+strlen(at_rsp), g_rui_cfg_t.g_lora_cfg_t.dev_eui, 8);
+            strcat(at_rsp, "\r\nAppEui:");
+            HexToStr(at_rsp+strlen(at_rsp), g_rui_cfg_t.g_lora_cfg_t.app_eui, 8);
+            strcat(at_rsp, "\r\nAppKey:");
+            HexToStr(at_rsp+strlen(at_rsp), g_rui_cfg_t.g_lora_cfg_t.app_key, 16);
+            strcat(at_rsp, "\r\nOTAA Join Start...\r\n");
+        }
+        else
+        {
+            strcat(at_rsp, "ABP:");
+            strcat(at_rsp, "\r\nDevAddr:");
+            sprintf(at_rsp+strlen(at_rsp), "%08X", g_rui_cfg_t.g_lora_cfg_t.dev_addr);
+            strcat(at_rsp, "\r\nAppsKey:");
+            HexToStr(at_rsp+strlen(at_rsp), g_rui_cfg_t.g_lora_cfg_t.appskey, 16);
+            strcat(at_rsp, "\r\nNwksKey:");
+            HexToStr(at_rsp+strlen(at_rsp), g_rui_cfg_t.g_lora_cfg_t.nwkskey, 16);
+            strcat(at_rsp, "\r\n");
+        }
+        at_response_string(at_rsp);
         rui_lora_join();
-        rui_at_response(true, NULL, RAK_OK);
+
         return;
     }
     
@@ -380,26 +448,29 @@ void at_parse(char *cmd)
     {
         ptr = NULL;
         index = 0;
-        memset(lora_port,0,5);
-        memset(send_data,0,256);
+        memset(lora_port, 0, 5);
+        memset(send_data, 0, 256);
         ptr = strstr(cmd,"lora:");
-        for(index; index<5; index++)
-        {
-            ptr++;
-        }
+        ptr += 5;
+
         index = 0;
         for(ptr; *ptr !=':'; ptr++)
         {
             lora_port[index++] = *ptr;
         }
         ptr++;
-        index= 0;
-        for(ptr; *ptr !='\0'; ptr++)
+
+        index = strlen(ptr);
+        if ((index%2) != 0)
         {
-            send_data[index++] = *ptr;
+            at_response_param_invalid(at_rsp);
+            return ;
         }
-        rui_lora_send(atoi(lora_port),send_data,strlen(send_data));
-        rui_at_response(true, NULL, RAK_OK);
+        else
+            StrToHex(send_data, ptr, index-2);
+
+        rui_lora_send(atoi(lora_port),send_data, (index-2)/2);
+        at_response_string(at_rsp);
         return;
     }
     
@@ -415,13 +486,19 @@ void at_parse(char *cmd)
         }
         else
         {
-            uart_put_string("Parameter is invalid.\r\n");
-            return;
+            at_response_param_invalid(at_rsp);
+            return ;
         }
 
         err_code = rui_lora_set_work_mode(work_mode);
-        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
-        else { rui_at_response(true, msg_flash_success, RAK_OK); }
+        if (err_code != RUI_STATUS_OK) {
+            strcat(at_rsp, "ERROR:RUI_AT_RW_FLASH_ERROR");
+            rui_at_response(false, at_rsp, RUI_AT_RW_FLASH_ERROR); 
+        }
+        else {
+            strcat(at_rsp, "LoRa work mode configure success\r\n");
+            rui_at_response(true, at_rsp, RUI_AT_OK); 
+        }
         return;
     }
     
@@ -432,17 +509,11 @@ void at_parse(char *cmd)
         ptr = NULL;
         index = 0;
         ptr = strstr(cmd,"class:");
-        for(index; index<6; index++)
-        {
-            ptr++;
-        }
+        ptr += 6;
+
         if(*ptr == '0')
         {
             class = 0;
-        }
-        else if(*ptr == '1')
-        {
-            class = 1;
         }
         else if(*ptr == '2')
         {
@@ -450,11 +521,18 @@ void at_parse(char *cmd)
         }
         else
         {
-            class = 0;
+            at_response_param_invalid(at_rsp);
+            return ;
         }
         err_code = rui_lora_set_class(class);
-        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
-        else { rui_at_response(true, msg_flash_success, RAK_OK); }
+        if (err_code != RUI_STATUS_OK) {
+            strcat(at_rsp, "ERROR:RUI_AT_RW_FLASH_ERROR");
+            rui_at_response(false, at_rsp, RUI_AT_RW_FLASH_ERROR); 
+        }
+        else {
+            strcat(at_rsp, "LoRa class configure success\r\n");
+            rui_at_response(true, at_rsp, RUI_AT_OK); 
+        }
         return;
     }
     
@@ -465,10 +543,8 @@ void at_parse(char *cmd)
         ptr = NULL;
         index = 0;
         ptr = strstr(cmd,"confirm:");
-        for(index; index<8; index++)
-        {
-            ptr++;
-        }
+        ptr += 8;
+
         if(*ptr == '0')
         {
             confirm = false;
@@ -478,10 +554,20 @@ void at_parse(char *cmd)
             confirm = true;
         }
         else
-        {}
+        {
+            at_response_param_invalid(at_rsp);
+            return ;
+        }
         err_code = rui_lora_set_confirm(confirm);
-        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
-        else { rui_at_response(true, msg_flash_success, RAK_OK); }
+        if (err_code != RUI_STATUS_OK) {
+            strcat(at_rsp, "ERROR:RUI_AT_RW_FLASH_ERROR");
+            rui_at_response(false, at_rsp, RUI_AT_RW_FLASH_ERROR); 
+        }
+        else {
+            if (confirm) strcat(at_rsp, "LoRa configure confirm success\r\n");
+            else strcat(at_rsp, "LoRa configure unconfirm success\r\n");
+            rui_at_response(true, at_rsp, RUI_AT_OK); 
+        }
         return;
     }
     
@@ -494,21 +580,20 @@ void at_parse(char *cmd)
         index = 0;
         memset(sleep_data,0,10);
         ptr = strstr(cmd,"interval:");
-        for(index; index<9; index++)
-        {
-            ptr++;
-        }
+        ptr += 9;
+
         if (*ptr == '0')
         {
             mode = RUI_AUTO_DISABLE;
         }
-        if (*ptr == '1')
+        else if (*ptr == '1')
         {
             mode = RUI_AUTO_ENABLE_SLEEP;
         }
-        if (*ptr == '2')
+        else
         {
-            mode = RUI_AUTO_ENABLE_SLEEP;
+            at_response_param_invalid(at_rsp);
+            return ;
         }
         index = 0;
         ptr++;
@@ -519,32 +604,38 @@ void at_parse(char *cmd)
         }
         if(atoi(sleep_data)<30)
         {
-            RUI_LOG_PRINTF("send interval should not be less than 30 s !!!!");
-            rui_at_response(false, "send interval should not be less than 30 s.\r\n", RAK_PARAM_ERROR);
+            RUI_LOG_PRINTF("Send interval should not be less than 30 s !!!!");
+            strcat(at_rsp, "Send interval should not be less than 30 s.\r\n");
+            at_response_param_invalid(at_rsp);
             return;
         }
         sleep_period = atoi(sleep_data) * 1000;
-        RUI_LOG_PRINTF("g_rui_cfg_t.sleep_enable = %d",mode);
-        RUI_LOG_PRINTF("g_rui_cfg_t.sleep_period = %d",sleep_period);
         err_code = rui_lora_set_send_interval(mode, sleep_period);
-        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
-        else { rui_at_response(true, msg_flash_success, RAK_OK); }
+        if (err_code != RUI_STATUS_OK) {
+            strcat(at_rsp, "ERROR:RUI_AT_RW_FLASH_ERROR");
+            rui_at_response(false, at_rsp, RUI_AT_RW_FLASH_ERROR); 
+        }
+        else {
+            if (mode == RUI_AUTO_DISABLE) strcat(at_rsp, "LoRa configure send_interval disable success\r\n");
+            else strcat(at_rsp, "LoRa configure send_interval sleep success\r\n");
+            rui_at_response(true, at_rsp, RUI_AT_OK); 
+        }
         return;
     }
     
     // at+get_config=lora:status
     if(strstr(cmd,"at+get_config=lora:status")!= NULL)
     {
+        rui_at_response(true, at_rsp, RUI_AT_OK);
         rui_lora_get_status(true, &lora_status);
-        rui_at_response(true, NULL, RAK_OK);
         return;
     }
     
     // at+get_config=lora:channel
     if(strstr(cmd,"at+get_config=lora:channel")!= NULL)
     {
+        rui_at_response(true, at_rsp, RUI_AT_OK);
         rui_get_channel_list();  // print lora channel list via uart
-        rui_at_response(true, NULL, RAK_OK);
         return;
     }
 
@@ -557,27 +648,30 @@ void at_parse(char *cmd)
         index = 0;
         memset(channel_num,0,4);
         ptr = strstr(cmd,"ch_mask:");
-        for(index; index<8; index++)
-        {
-            ptr++;
-        }
+        ptr += 8;
+
         index = 0;
         for(ptr; *ptr !=':'; ptr++)
         {
             channel_num[index++] = *ptr;
         }
-        ptr++;
-        if(*ptr == '1')
+        if (atoi(channel_num) > 71)
         {
-            status = 1;
-        }
-        else
-        {
-            status = 0;
+            at_response_param_invalid(at_rsp);
+            return ;
         }
 
+        ptr++;
+        if(*ptr == '1') {status = 1;}
+        else if (*ptr == '0') {status = 0;}
+        else {
+            at_response_param_invalid(at_rsp);
+            return ;
+        }
         rui_lora_set_channel_mask(atoi(channel_num),status);
-        rui_at_response(true, NULL, RAK_OK);
+
+        strcat(at_rsp,"LoRa channel mask configure success\r\n");
+        rui_at_response(true, at_rsp, RUI_AT_OK);
         return;
     }
 
@@ -588,16 +682,18 @@ void at_parse(char *cmd)
         ptr = strstr(cmd, "uart_mode:");
         ptr += 10;
 
-        if (*ptr == '1')
+        if ((*ptr == '1') && (*(ptr+2) == '1'))
         {
-            ptr += 2;
-            if (*ptr == '1')
-            {
-                rui_uart_mode_config(RUI_UART1, RUI_UART_UNVARNISHED);
-            }
+            rui_uart_mode_config(RUI_UART1, RUI_UART_UNVARNISHED);
+        }
+        else
+        {
+            at_response_param_invalid(at_rsp);
+            return ;
         }
 
-        rui_at_response(true, "Uart config success.\r\n", RAK_OK);
+        strcat(at_rsp,"Uart transparent mode configure success\r\n");
+        rui_at_response(true, at_rsp, RUI_AT_OK);
         return ;
     }
 
@@ -618,39 +714,59 @@ void at_parse(char *cmd)
         {
             work_mode = BLE_MODE_CENTRAL;
         }
-        else
+        else if (*ptr == '2')
         {
             work_mode = BLE_MODE_OBSERVER;
         }
+        else
+        {
+            at_response_param_invalid(at_rsp);
+            return ;
+        }
+        ptr += 2;
 
         #ifdef S140
-            ptr += 2;
             if (*ptr == '1') { long_range_enable = 1; }
-            else { long_range_enable = 0; }
+            else if (*ptr == '0'){ long_range_enable = 0; }
+            else
+            {
+                at_response_param_invalid(at_rsp);
+                return ;
+            }
         #endif
 
         #ifdef S132
-            long_range_enable = 0;  // nrf52832 does not support long range
+            if (*ptr == '0')
+                { long_range_enable = 0; }
+            else
+            {
+                at_response_param_invalid(at_rsp);
+                return ;
+            }
         #endif
 
-        RUI_LOG_PRINTF("g_rui_cfg_t.g_ble_cfg_t.work_mode = %d", work_mode);
-        RUI_LOG_PRINTF("g_rui_cfg_t.g_ble_cfg_t.long_range_enable = %d", long_range_enable);
         err_code = rui_ble_set_work_mode(work_mode, long_range_enable);
-        if (err_code != RUI_STATUS_OK) { rui_at_response(false, msg_flash_failed, WRITE_FLASH_FAIL); }
-        else { rui_at_response(true, msg_flash_success, RAK_OK); }
+        if (err_code != RUI_STATUS_OK) {
+            strcat(at_rsp, "ERROR:RUI_AT_RW_FLASH_ERROR");
+            rui_at_response(false, at_rsp, RUI_AT_RW_FLASH_ERROR); 
+        }
+        else {
+            strcat(at_rsp, "BLE work mode configure success\r\n");
+            rui_at_response(true, at_rsp, RUI_AT_OK); 
+        }
         return;
     }
 
     // at+help
     if (strstr(cmd, "at+help") != NULL)
     {
-        rui_at_response(true, AT_HELP, RAK_OK);
-        RUI_LOG_PRINTF(AT_HELP);
+        rui_at_response(true, at_rsp, RUI_AT_OK);
+        at_response_string(AT_HELP);
         return;
     }
 
-    rui_at_response(false, "Invalid at command!!\r\n", RAK_ERROR);
-    RUI_LOG_PRINTF("Invalid at command!!");
+    strcat(at_rsp, "ERROR:RUI_AT_UNSUPPORT");
+    rui_at_response(false, at_rsp, RUI_AT_UNSUPPORT);
     return;
 }
 
