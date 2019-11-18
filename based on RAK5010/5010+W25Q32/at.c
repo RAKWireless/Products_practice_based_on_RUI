@@ -460,6 +460,7 @@ void at_parse(char *cmd)
     if(strstr(cmd,"cellular:(")!= NULL)
     {
 		ptr = NULL;
+        int mqtt_flag = 0;
 		memset(gsm_cmd,0,100);
         memset(gsm_rsp,0,256);
         index = 0;
@@ -511,6 +512,48 @@ void at_parse(char *cmd)
             rui_cellular_response(gsm_rsp, 256, 500 * 2);
             memset(gsm_rsp,0,256);
             rui_cellular_response(gsm_rsp, 256, 500 * 25);
+        }
+        else if (strstr(gsm_cmd,"AT+QMTOPEN")!= NULL && strstr(gsm_cmd,",")!= NULL)
+        {
+            rui_cellular_send(gsm_cmd);
+            rui_cellular_response(gsm_rsp, 256, 500 * 2);
+            memset(gsm_rsp,0,256);
+            rui_cellular_response(gsm_rsp, 256, 500 * 15);
+        }
+        else if (strstr(gsm_cmd,"AT+QMTCONN=")!= NULL && strstr(gsm_cmd,",")!= NULL)
+        {
+            rui_cellular_send(gsm_cmd);
+            rui_cellular_response(gsm_rsp, 256, 500 * 2);
+            memset(gsm_rsp,0,256);
+            rui_cellular_response(gsm_rsp, 256, 500 * 15);
+        }
+        else if (strstr(gsm_cmd,"AT+QMTSUB")!= NULL && strstr(gsm_cmd,",")!= NULL)
+        {
+            rui_cellular_send(gsm_cmd);
+            rui_cellular_response(gsm_rsp, 256, 500 * 2);
+            memset(gsm_rsp,0,256);
+            rui_cellular_response(gsm_rsp, 256, 500 * 15);
+        }        
+        else if (strstr(gsm_cmd,"AT+QMTUNS")!= NULL && strstr(gsm_cmd,",")!= NULL)
+        {
+            rui_cellular_send(gsm_cmd);
+            rui_cellular_response(gsm_rsp, 256, 500 * 2);
+            memset(gsm_rsp,0,256);
+            rui_cellular_response(gsm_rsp, 256, 500 * 15);
+        } 
+        else if (strstr(gsm_cmd,"AT+QMTPUB")!= NULL && strstr(gsm_cmd,",")!= NULL)
+        {
+            rui_cellular_send(gsm_cmd);
+            rui_cellular_response(gsm_rsp, 256, 500 * 5);
+            mqtt_flag =1;
+        }         
+        else if (mqtt_flag==1)
+        {
+            mqtt_flag=0;
+            rui_cellular_send(gsm_cmd);
+            rui_cellular_response(gsm_rsp, 256, 500 * 2);
+            memset(gsm_rsp,0,256);
+            rui_cellular_response(gsm_rsp, 256, 500 * 15);
         }
         else 
         {
