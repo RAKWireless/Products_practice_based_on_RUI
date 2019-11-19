@@ -50,7 +50,7 @@ typedef struct
 extern bool HasFix;
 extern RUI_LORA_STATUS_T app_lora_status; //record lora status 
 RUI_GPIO_ST Gps_Power_Ctl;
-bool gps_timeout_flag = false;  //If satellite detected fail,this flag will be true
+volatile bool gps_timeout_flag = true;  //If satellite detected fail,this flag will be true
 TimerEvent_t Gps_Cnt_Timer;  //search satellite timer
 #define GPS_SAMPLE_CNT 10
 GPS_DATA_T gps_data[GPS_SAMPLE_CNT];
@@ -98,7 +98,6 @@ int GPS_get_data(double* latitude,double* longitude,int16_t* altitude)
 		rui_running();  
 	};
 	rui_timer_stop(&Gps_Cnt_Timer);  //stop search satellite timer
-	gps_timeout_flag = false;
 
 	if(HasFix)	
 	{

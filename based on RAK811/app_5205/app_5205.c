@@ -31,7 +31,7 @@ const uint8_t level[2]={0,1};
 bool IsJoiningflag= false;  //flag whether joining or not status
 bool sample_flag = false;  //flag sensor sample record for print sensor data by AT command 
 bool sample_status = false;  //current whether sample sensor completely
-bool sendfull = false;  //flag whether send all sensor data 
+bool sendfull = true;  //flag whether send all sensor data 
 
 extern uint8_t NmeaString[];//GPS variate and buffer
 extern uint8_t NmeaStringSize;
@@ -156,6 +156,7 @@ void user_lora_send(void)
         rui_lora_get_dr(&dr,&ploadsize);
         if(ploadsize < sensor_data_cnt)
         {
+            sendfull = false;  //need subcontract send
             Psend_start = &a[lpp_data[temp_cnt].startcnt];                          
             for(;temp_cnt <= lpp_cnt; temp_cnt++)
             {
@@ -488,10 +489,9 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T mcps_type,RUI_RETURN_STATUS status)
             default:             
                 break;
         } 
-    }else RUI_LOG_PRINTF("[LoRa]: LORA_EVENT_ERROR %d\r\n", status);
-
-    sendfull = false;     
+    }else RUI_LOG_PRINTF("[LoRa]: LORA_EVENT_ERROR %d\r\n", status);    
 	
+    rui_delay_ms(10);  
     rui_gpio_rw(RUI_IF_WRITE,&Led_Blue, low);
     rui_timer_start(&Led_Blue_Timer); 
 
@@ -550,11 +550,15 @@ void bsp_sleep(void)
 	GpsStop();  //close gps before entry sleep mode
 	rui_timer_stop(&Gps_Cnt_Timer);  //stop search satellite timer
 } 
+extern bool gps_timeout_flag;
 void bsp_wakeup(void)
 {
     /*****************************************************************************
              * user process code after exit sleep
     ******************************************************************************/
+   sendfull = true;  //clear subcontract send flag
+   sample_status = false;  //clear sample flag
+   gps_timeout_flag = true;  //clear serch Satellite flag 
 }
 
 /*******************************************************************************************
@@ -656,7 +660,6 @@ void main(void)
                         autosend_flag = true;
                     }       
                 }
-
 
                 if(!sample_status)app_loop();
                 else user_lora_send();
