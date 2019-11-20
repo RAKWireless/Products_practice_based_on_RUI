@@ -357,8 +357,6 @@ void rui_uart_recv(RUI_UART_DEF uart_def, uint8_t *pdata, uint16_t len)
  * *****************************************************************************************/ 
 void main(void)
 {
-    static RUI_LORA_AUTO_SEND_MODE autosendtemp_status;  //Flag whether modify autosend_interval by AT_cmd  
-
     rui_init();
     bsp_init();
     
@@ -376,7 +374,6 @@ void main(void)
     * 
     * *****************************************************************************************/ 
     rui_lora_get_status(false,&app_lora_status);
-    autosendtemp_status = app_lora_status.autosend_status;
 
 	if(app_lora_status.autosend_status)RUI_LOG_PRINTF("autosend_interval: %us\r\n", app_lora_status.lorasend_interval);
 
@@ -432,21 +429,7 @@ void main(void)
         switch(app_lora_status.work_mode)
         {
             case RUI_LORAWAN:
-                if(autosendtemp_status != app_lora_status.autosend_status) 
-                {
-                    autosendtemp_status = app_lora_status.autosend_status;
-                    if(autosendtemp_status == RUI_AUTO_DISABLE)
-                    {
-                        rui_lora_set_send_interval(RUI_AUTO_DISABLE,0);  //stop auto send data
-                        autosend_flag = false; 
-                    }else
-                    {
-                        autosend_flag = true;
-                    }       
-                }
-
-                app_loop();
-				
+                app_loop();				
                 break;
             case RUI_P2P:
                 /*************************************************************************************

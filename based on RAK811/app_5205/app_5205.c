@@ -157,10 +157,28 @@ void user_lora_send(void)
         if(ploadsize < sensor_data_cnt)
         {
             sendfull = false;  //need subcontract send
-            Psend_start = &a[lpp_data[temp_cnt].startcnt];                          
+            Psend_start = &a[lpp_data[temp_cnt].startcnt];  
+            if(lpp_data[temp_cnt].size > ploadsize)
+            {
+                RUI_LOG_PRINTF("ERROR: RUI_AT_LORA_LENGTH_ERROR %d\r\n",RUI_AT_LORA_LENGTH_ERROR);
+                sample_status = false;
+                sendfull = true;
+                lpp_cnt = 0;
+                temp_cnt = 0;
+                sensor_data_cnt=0; 
+                rui_lora_get_status(false,&app_lora_status); 
+                switch(app_lora_status.autosend_status)
+                {
+                    case RUI_AUTO_ENABLE_SLEEP:rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after send success
+                        break;
+                    case RUI_AUTO_ENABLE_NORMAL:rui_lora_set_send_interval(RUI_AUTO_ENABLE_NORMAL,app_lora_status.lorasend_interval);  //start autosend_timer after send success
+                        break;
+                    default:break;
+                }
+                return; 
+            }                        
             for(;temp_cnt <= lpp_cnt; temp_cnt++)
             {
-                // UartPrint("lpp_cnt:%d, temp_size:%d,lpp_data[%d].size:%d,Msize:%d\r\n",lpp_cnt,temp_size,temp_cnt,lpp_data[temp_cnt].size,ploadsize-foptslen);
                 if(ploadsize < (temp_size + lpp_data[temp_cnt].size))
                 {                                                              
                     rui_return_status = rui_lora_send(8,Psend_start,temp_size);
@@ -566,8 +584,6 @@ void bsp_wakeup(void)
  * *****************************************************************************************/ 
 void main(void)
 {
-    static RUI_LORA_AUTO_SEND_MODE autosendtemp_status;  //Flag whether modify autosend_interval by AT_cmd  
-
     rui_init();
     bsp_init();
     
@@ -591,7 +607,6 @@ void main(void)
     * 
     * *****************************************************************************************/ 
     rui_lora_get_status(false,&app_lora_status);
-    autosendtemp_status = app_lora_status.autosend_status;
 
 	if(app_lora_status.autosend_status)RUI_LOG_PRINTF("autosend_interval: %us\r\n", app_lora_status.lorasend_interval);
 
@@ -648,23 +663,8 @@ void main(void)
         switch(app_lora_status.work_mode)
         {
             case RUI_LORAWAN:
-                if(autosendtemp_status != app_lora_status.autosend_status) 
-                {
-                    autosendtemp_status = app_lora_status.autosend_status;
-                    if(autosendtemp_status == RUI_AUTO_DISABLE)
-                    {
-                        rui_lora_set_send_interval(RUI_AUTO_DISABLE,0);  //stop auto send data
-                        autosend_flag = false; 
-                    }else
-                    {
-                        autosend_flag = true;
-                    }       
-                }
-
                 if(!sample_status)app_loop();
-                else user_lora_send();
-
-				
+                else user_lora_send();				
                 break;
             case RUI_P2P:
                 /*************************************************************************************
