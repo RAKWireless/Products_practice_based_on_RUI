@@ -58,14 +58,17 @@ int at_cmd_process(char *str)
     char* argv[MAX_ARGV]={NULL};
 
     str0=str;
+
+    RUI_LOG_PRINTF("%s\r\n",str);
 		
     if ((strncmp(str0, "at+", 3) != 0) || str0[3] == '\0') {
-        RUI_LOG_PRINTF("AT format error.\r\n");
+        RUI_LOG_PRINTF("ERROR:RUI_AT_UNSUPPORT %d\r\n",RUI_AT_UNSUPPORT);
         return FAIL;
     }
     str0 += 3;
     argc = parse_args(str0, argv);
-    if (argc > 0) {
+    if (argc > 0) 
+    {
         for (i = 0; i < sizeof(cli_cmds)/sizeof(struct cli_cmd); i++) {
             if (strcmp(argv[0], cli_cmds[i].name) == 0) {
                 cli_cmds[i].function(argc, argv);
@@ -73,11 +76,12 @@ int at_cmd_process(char *str)
             }        
         }
         if (i == sizeof(cli_cmds)/sizeof(struct cli_cmd)) {
-            RUI_LOG_PRINTF("The AT Command is invalid\r\n");
+            RUI_LOG_PRINTF("ERROR:RUI_AT_UNSUPPORT %d\r\n",RUI_AT_UNSUPPORT);
         }
     }
-    else {
-        RUI_LOG_PRINTF("Parameter format error.\r\n");
+    else 
+    {
+        RUI_LOG_PRINTF("ERROR:RUI_AT_UNSUPPORT %d\r\n",RUI_AT_UNSUPPORT);
         return FAIL;
     }
 
@@ -117,10 +121,9 @@ void dump_hex2string(uint8_t *buf , uint8_t len)
    RUI_LOG_PRINTF("\r\n");
 }
 
-bool IsJoiningflag;  //Flag whether is joining LoRaWAN
+extern bool IsJoiningflag;  //Flag whether is joining LoRaWAN
 static void lora_join(int argc, char *argv[])
 {
-    int8_t status;
     RUI_LORA_STATUS_T app_lora_status;
     rui_lora_get_status(false,&app_lora_status);     
     if(argv[1] == NULL)
@@ -135,15 +138,14 @@ static void lora_join(int argc, char *argv[])
 			RUI_LOG_PRINTF("AppKey:");
 			dump_hex2string(app_lora_status.app_key, 16);
             RUI_LOG_PRINTF("OTAA Join Start... \r\n"); 
-            RUI_LOG_PRINTF("OK\r\n");
             IsJoiningflag = true;            
-            status = rui_lora_join();
+            rui_return_status = rui_lora_join();
             switch(rui_return_status)
             {
                 case RUI_STATUS_OK:break ;
-                case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("Parameter not found.\r\n");
+                case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                     break;
-                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                default: RUI_LOG_PRINTF("ERROR: RUI_AT_UNSUPPORT %d\r\n",RUI_AT_UNSUPPORT);
                     break;
             } 
         }
@@ -155,24 +157,24 @@ static void lora_join(int argc, char *argv[])
 			dump_hex2string(app_lora_status.apps_key , 16);    
 			RUI_LOG_PRINTF("NwksKey: ");
 			dump_hex2string(app_lora_status.nwks_key , 16);
-            status = rui_lora_join();
+            rui_return_status = rui_lora_join();
             switch(rui_return_status)
             {
                 case RUI_STATUS_OK:LoRaWANJoined_callback(1);break ;
-                case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("Parameter not found.\r\n");
+                case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                     break;
-                default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+                default: RUI_LOG_PRINTF("ERROR: RUI_AT_UNSUPPORT %d\r\n",RUI_AT_UNSUPPORT);
                     break;
             }           
         }else 
         {
-             RUI_LOG_PRINTF("Parameter format error.\r\n");
+            RUI_LOG_PRINTF("ERROR: RUI_AT_UNSUPPORT %d\r\n",RUI_AT_UNSUPPORT);
             return ;
         }
     }
     else
     {
-        RUI_LOG_PRINTF("Parameter format error.\r\n");
+        RUI_LOG_PRINTF("ERROR: RUI_AT_UNSUPPORT %d\r\n",RUI_AT_UNSUPPORT);
         return ;
     }    
     
@@ -182,7 +184,7 @@ static void lora_version(int argc, char *argv[])
 {
     uint8_t version[20];
     rui_device_version(version);
-    RUI_LOG_PRINTF("OK%s\r\n", version);
+    RUI_LOG_PRINTF("Firmware Version: RUI v%s\r\nOK\r\n", version);
 }
 
 LORA_REGION rw_String2Region(char* region)
@@ -217,7 +219,7 @@ static void lora_read_config(int argc, char *argv[])
 {
     if (argc != 2) 
     {
-        RUI_LOG_PRINTF("Parameter format error.\r\n");
+        RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
         return;
     }
     
@@ -227,7 +229,7 @@ static void lora_read_config(int argc, char *argv[])
 static void lora_write_config(int argc, char *argv[])
 {
     if (argc < 2) {
-        RUI_LOG_PRINTF("Parameter format error.\r\n");
+        RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
         return;
     }    
     write_config(argv[1]);   
@@ -243,7 +245,7 @@ static void lora_send(int argc, char *argv[])
     rui_lora_get_status(false,&app_lora_status);   
     
     if (argc != 2) {
-        RUI_LOG_PRINTF("Parameter format error.\r\n");
+        RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
         return;
     } 
     while(*ch != '\0' && *ch != '\r') 
@@ -271,7 +273,7 @@ static void lora_send(int argc, char *argv[])
     {
         if(i!=2)
         {
-            RUI_LOG_PRINTF("Parameter format error.\r\n");
+            RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
             return ;
         }
           
@@ -281,11 +283,11 @@ static void lora_send(int argc, char *argv[])
         rui_return_status = rui_uart_send(atoi(argv[2]),send_data,app_len); 
         switch(rui_return_status)
         {
-            case RUI_STATUS_OK:RUI_LOG_PRINTF("\r\nUart%d send OK\r\n",atoi(argv[2])); 
+            case RUI_STATUS_OK:RUI_LOG_PRINTF("\r\nUart%d send success\r\nOK\r\n",atoi(argv[2])); 
                 break;
-            case RUI_STATUS_UART_SEND_ERROR:RUI_LOG_PRINTF("uart send error.\r\n");
+            case RUI_STATUS_UART_SEND_ERROR:RUI_LOG_PRINTF("ERROR: RUI_AT_UART_SEND_ERROR %d\r\n",RUI_AT_UART_SEND_ERROR);
                 return FAIL;
-            default :RUI_LOG_PRINTF("Parameter is invalid.\r\n");
+            default :RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
         }
           
     }
@@ -295,7 +297,7 @@ static void lora_send(int argc, char *argv[])
         {
             if(i!=1)
             {
-                RUI_LOG_PRINTF("Parameter format error.\r\n");
+                RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                 return ;
             } 
 
@@ -305,14 +307,14 @@ static void lora_send(int argc, char *argv[])
             app_len = strlen(argv[2]);
             if (app_len%2) 
             {
-                RUI_LOG_PRINTF("Parameter format error.\r\n");
+                RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                 return ;
             }
             for (int i = 0; i < app_len; i++) 
             {
                 if (!isxdigit(send_data[i])) 
                 {
-                    RUI_LOG_PRINTF("Please entry hexadecimal character.\r\n");
+                    RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                     return ;   
                 }
             }
@@ -324,11 +326,11 @@ static void lora_send(int argc, char *argv[])
             } 
 
             rui_lorap2p_send(send_data,app_len);
-            RUI_LOG_PRINTF("OK\r\n");
+            RUI_LOG_PRINTF("LoRaP2P send success\r\nOK\r\n");
             return;
         }else
         {
-            RUI_LOG_PRINTF("Parameter format error.\r\n");
+            RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
             return ;
         }
 
@@ -336,14 +338,14 @@ static void lora_send(int argc, char *argv[])
     {
         if(strcmp(argv[1],"lora") != 0)
         {
-            RUI_LOG_PRINTF("Parameter format error.\r\n");
+            RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
             return ;
         }
         
     
         if(i!=2)
         {
-            RUI_LOG_PRINTF("Parameter format error.\r\n");
+            RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
             return ;
         } 
 
@@ -352,14 +354,14 @@ static void lora_send(int argc, char *argv[])
         app_len = strlen(argv[3]);
         if (app_len%2) 
         {
-            RUI_LOG_PRINTF("Parameter format error.\r\n");
+            RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
             return;
         }
         for (int i = 0; i < app_len; i++) 
         {
             if (!isxdigit(send_data[i])) 
             {
-                RUI_LOG_PRINTF("Please entry hexadecimal character.\r\n");
+                RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                 return ;   
             }
         }
@@ -373,24 +375,24 @@ static void lora_send(int argc, char *argv[])
         rui_return_status = rui_lora_send(atoi(argv[2]),&send_data[0],app_len);
         switch(rui_return_status)
         {
-            case RUI_STATUS_OK:RUI_LOG_PRINTF("OK\r\n");break;
-            case RUI_LORA_STATUS_NO_NETWORK_JOINED:RUI_LOG_PRINTF("Network not joined.\r\n");break;
-            case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("parameter is invalid.\r\n");
+            case RUI_STATUS_OK:break;
+            case RUI_LORA_STATUS_NO_NETWORK_JOINED:RUI_LOG_PRINTF("ERROR: RUI_LORA_STATUS_NO_NETWORK_JOINED %d\r\n",RUI_LORA_STATUS_NO_NETWORK_JOINED);break;
+            case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                 break;
-            default: RUI_LOG_PRINTF("unknown network error:%d\r\n",rui_return_status);
+            default: RUI_LOG_PRINTF("ERROR: RUI_AT_UNSUPPORT %d\r\n",RUI_AT_UNSUPPORT);
                 break;
         } 
         return;
     }else
     {
-        RUI_LOG_PRINTF("Parameter format error.\r\n");
+        RUI_LOG_PRINTF("ERROR: RUI_AT_UNSUPPORT %d\r\n",RUI_AT_UNSUPPORT);
         return ;
     }
 }
 
 static void atcmd_help(int argc, char *argv[])
 {
-    RUI_LOG_PRINTF("OK.\r\n*************************************************\r\n===============AT Commands List==================\r\n");
+    RUI_LOG_PRINTF("OK\r\n*************************************************\r\n===============AT Commands List==================\r\n");
     RUI_LOG_PRINTF("Device AT commands:\r\n");
     RUI_LOG_PRINTF("  at+version\r\n");
     RUI_LOG_PRINTF("  at+help\r\n");
