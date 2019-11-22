@@ -294,33 +294,36 @@ void LoRaWANJoined_callback(uint32_t status)
         }          
     }    
 }
-void LoRaWANSendsucceed_callback(RUI_MCPS_T status)
+void LoRaWANSendsucceed_callback(RUI_MCPS_T mcps_type,RUI_RETURN_STATUS status)
 {
-    switch( status )
+    if(status == RUI_STATUS_OK)
     {
-        case RUI_MCPS_UNCONFIRMED:
+        switch( mcps_type )
         {
+            case RUI_MCPS_UNCONFIRMED:
+            {
             RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_UNCONFIRMED send success\r\nOK\r\n");
-            break;
-        }
-        case RUI_MCPS_CONFIRMED:
-        {
+                break;
+            }
+            case RUI_MCPS_CONFIRMED:
+            {
             RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_CONFIRMED send success\r\nOK\r\n");
-            break;
-        }
-        case RUI_MCPS_PROPRIETARY:
-        {
+                break;
+            }
+            case RUI_MCPS_PROPRIETARY:
+            {
             RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_PROPRIETARY send success\r\nOK\r\n");
-            break;
-        }
-        case RUI_MCPS_MULTICAST:
-        {
+                break;
+            }
+            case RUI_MCPS_MULTICAST:
+            {
             RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_MULTICAST send success\r\nOK\r\n");
             break;           
         }
         default:             
             break;
-    }       
+        } 
+	}else RUI_LOG_PRINTF("ERROR: RUI_RETURN_STATUS %d\r\n",status); 
 	
     rui_gpio_rw(RUI_IF_WRITE,&Led_Blue, low);
     rui_timer_start(&Led_Blue_Timer); 

@@ -20,9 +20,9 @@ volatile static bool autosend_flag = false;    //auto send flag
 static uint8_t a[80]={};    // Data buffer to be sent by lora
 static uint8_t sensor_data_cnt=0;  //send data counter by LoRa 
 bool IsJoiningflag= false;  //flag whether joining or not status
-bool sample_flag = false;  //flag sensor sample record for print sensor data by AT command
+bool sample_flag = false;  //flag sensor sample record for print sensor data by AT command 
 bool sample_status = false;  //current whether sample sensor completely
-bool sendfull = false;  //flag whether send all sensor data 
+bool sendfull = true;  //flag whether send all sensor data 
 
 
 
@@ -58,7 +58,27 @@ void user_lora_send(void)
         rui_lora_get_dr(&dr,&ploadsize);
         if(ploadsize < sensor_data_cnt)
         {
-            Psend_start = &a[lpp_data[temp_cnt].startcnt];                          
+            sendfull = false;  //need subcontract send
+            Psend_start = &a[lpp_data[temp_cnt].startcnt];  
+            if(lpp_data[temp_cnt].size > ploadsize)
+            {
+                RUI_LOG_PRINTF("ERROR: RUI_AT_LORA_LENGTH_ERROR %d\r\n",RUI_AT_LORA_LENGTH_ERROR);
+                sample_status = false;
+                sendfull = true;
+                lpp_cnt = 0;
+                temp_cnt = 0;
+                sensor_data_cnt=0; 
+                rui_lora_get_status(false,&app_lora_status); 
+                switch(app_lora_status.autosend_status)
+                {
+                    case RUI_AUTO_ENABLE_SLEEP:rui_lora_set_send_interval(RUI_AUTO_ENABLE_SLEEP,app_lora_status.lorasend_interval);  //start autosend_timer after send success
+                        break;
+                    case RUI_AUTO_ENABLE_NORMAL:rui_lora_set_send_interval(RUI_AUTO_ENABLE_NORMAL,app_lora_status.lorasend_interval);  //start autosend_timer after send success
+                        break;
+                    default:break;
+                }
+                return; 
+            }                        
             for(;temp_cnt <= lpp_cnt; temp_cnt++)
             {
                 if(ploadsize < (temp_size + lpp_data[temp_cnt].size))
@@ -309,9 +329,8 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T mcps_type,RUI_RETURN_STATUS status)
             default:             
                 break;
         } 
-    }else RUI_LOG_PRINTF("[LoRa]: LORA_EVENT_ERROR %d\r\n", status);
-
-    sendfull = false;     
+    }else RUI_LOG_PRINTF("ERROR: RUI_RETURN_STATUS %d\r\n",status);    
+    
 	
     rui_lora_get_status(false,&app_lora_status);//The query gets the current status 
     switch(app_lora_status.autosend_status)

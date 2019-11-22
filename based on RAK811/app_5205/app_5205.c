@@ -507,7 +507,7 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T mcps_type,RUI_RETURN_STATUS status)
             default:             
                 break;
         } 
-    }else RUI_LOG_PRINTF("[LoRa]: LORA_EVENT_ERROR %d\r\n", status);    
+    }else RUI_LOG_PRINTF("ERROR: RUI_RETURN_STATUS %d\r\n",status);    
 	
     rui_delay_ms(10);  
     rui_gpio_rw(RUI_IF_WRITE,&Led_Blue, low);
