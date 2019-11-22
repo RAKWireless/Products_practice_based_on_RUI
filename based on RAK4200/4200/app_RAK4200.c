@@ -214,7 +214,9 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T mcps_type,RUI_RETURN_STATUS status)
         }
     }
     else
+    {
         RUI_LOG_PRINTF("ERROR: RUI_RETURN_STATUS %d\r\n",status); 
+    }
 
     rui_lora_get_status(false,&app_lora_status);//The query gets the current status 
     switch(app_lora_status.autosend_status)
