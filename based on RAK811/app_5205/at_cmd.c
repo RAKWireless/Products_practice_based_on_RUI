@@ -142,9 +142,9 @@ static void lora_join(int argc, char *argv[])
             switch(rui_return_status)
             {
                 case RUI_STATUS_OK:break ;
-                case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
+                case RUI_LORA_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_LORA_PARAMETER_INVALID %d\r\n",RUI_AT_LORA_PARAMETER_INVALID);
                     break;
-                default: RUI_LOG_PRINTF("ERROR: RUI_AT_UNSUPPORT %d\r\n",RUI_AT_UNSUPPORT);
+                default: RUI_LOG_PRINTF("ERROR: RUI_RETURN_STATUS %d\r\n",rui_return_status);
                     break;
             } 
         }
@@ -162,7 +162,7 @@ static void lora_join(int argc, char *argv[])
                 case RUI_STATUS_OK:LoRaWANJoined_callback(1);break ;
                 case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                     break;
-                default: RUI_LOG_PRINTF("ERROR: RUI_AT_UNSUPPORT %d\r\n",RUI_AT_UNSUPPORT);
+                default: RUI_LOG_PRINTF("ERROR: RUI_RETURN_STATUS %d\r\n",rui_return_status);
                     break;
             }           
         }else 
@@ -378,7 +378,7 @@ static void lora_send(int argc, char *argv[])
             case RUI_LORA_STATUS_NO_NETWORK_JOINED:RUI_LOG_PRINTF("ERROR: RUI_LORA_STATUS_NO_NETWORK_JOINED %d\r\n",RUI_LORA_STATUS_NO_NETWORK_JOINED);break;
             case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                 break;
-            default: RUI_LOG_PRINTF("ERROR: RUI_AT_UNSUPPORT %d\r\n",RUI_AT_UNSUPPORT);
+            default: RUI_LOG_PRINTF("ERROR: RUI_RETURN_STATUS %d\r\n",rui_return_status);
                 break;
         } 
         return;

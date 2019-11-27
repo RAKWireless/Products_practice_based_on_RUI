@@ -422,6 +422,12 @@ typedef enum {
     RUI_FLASH_ORIGIN
 } RUI_FLASH_MODE;
 
+typedef struct RUI_PWM_ST {
+    RUI_GPIO_ST rui_gpio;
+    uint32_t frequency;  //frequency <= 160000*dutycycle in RAK811
+    uint8_t dutycycle;  //value range:0~100 
+} RUI_PWM_ST;
+
 /***************************************************************************************
  * @brief       This API is used to configure the parameters for uart.
  * @return      RUI_RETURN_STATUS
@@ -1077,6 +1083,27 @@ RUI_RETURN_STATUS rui_gpio_interrupt(bool control, RUI_GPIO_ST st, RUI_GPIO_INTE
                 uint16_t* lengthM:Maximum acceptable size 
 ***************************************************************************************/
 RUI_RETURN_STATUS rui_lora_get_dr(uint8_t* dr, uint16_t* lengthM);
+
+/***************************************************************************************
+ * @brief       This API is used to init PWM.
+ * @return      RUI_RETURN_STATUS
+ * @param       RUI_PWM_ST* pwm_st: pwm structure pointer  
+***************************************************************************************/
+RUI_RETURN_STATUS rui_pwm_init(RUI_PWM_ST* pwm_st);
+
+/***************************************************************************************
+ * @brief       This API is used to start PWM.
+ * @return      RUI_RETURN_STATUS
+ * @param       RUI_PWM_ST* pwm_st: pwm structure pointer 
+***************************************************************************************/
+RUI_RETURN_STATUS rui_pwm_start(RUI_PWM_ST* pwm_st);
+
+/***************************************************************************************
+ * @brief       This API is used to stop PWM.
+ * @return      RUI_RETURN_STATUS
+ * @param       RUI_PWM_ST* pwm_st: pwm structure pointer 
+***************************************************************************************/
+RUI_RETURN_STATUS rui_pwm_stop(RUI_PWM_ST* pwm_st);
 
 #ifdef SOFTDEVICE_PRESENT
 #define RUI_LOG_PRINTF(fmt, args...)  NRF_LOG_INFO(fmt, ##args)
