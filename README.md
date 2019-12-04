@@ -4,4 +4,13 @@ All products practice is developed by calling RUI APIs. The following document s
 https://doc.rakwireless.com/developer-tools/developer-tools/-
 
 
-Rui.h is in /common header now and add it in your app catalogue.
+Please note that rui.h is in /common header now and add it in your app catalogue.
+
+After you prepare your Application and want to compile a customized firmware by yourself, you can use RUI online compiler.
+
+http://47.112.137.11:12090/#/user/login
+
+More details please have a look at this document:
+
+https://github.com/RAKWireless/Products_practice_based_on_RUI/tree/master/RUI%20online%20compiler
+
