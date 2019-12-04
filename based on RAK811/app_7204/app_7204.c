@@ -202,7 +202,7 @@ void app_loop(void)
             switch(rui_return_status)
             {
                 case RUI_STATUS_OK:RUI_LOG_PRINTF("OTAA Join Start...\r\n");break;
-                case RUI_LORA_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
+                case RUI_LORA_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_LORA_PARAMETER_INVALID %d\r\n",RUI_AT_LORA_PARAMETER_INVALID);
                     rui_lora_get_status(false,&app_lora_status);  //The query gets the current status 
                     switch(app_lora_status.autosend_status)
                     {
@@ -214,6 +214,7 @@ void app_loop(void)
                     } 
                     break;
                 default: RUI_LOG_PRINTF("ERROR: LORA_STATUS_ERROR %d\r\n",rui_return_status);
+                    if(app_lora_status.lora_dr > 1)rui_lora_set_dr(app_lora_status.lora_dr-1);
                     rui_lora_get_status(false,&app_lora_status); 
                     switch(app_lora_status.autosend_status)
                     {
@@ -302,22 +303,22 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T mcps_type,RUI_RETURN_STATUS status)
         {
             case RUI_MCPS_UNCONFIRMED:
             {
-            RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_UNCONFIRMED send success\r\nOK\r\n");
+                RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_UNCONFIRMED send success\r\nOK\r\n");
                 break;
             }
             case RUI_MCPS_CONFIRMED:
             {
-            RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_CONFIRMED send success\r\nOK\r\n");
+                RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_CONFIRMED send success\r\nOK\r\n");
                 break;
             }
             case RUI_MCPS_PROPRIETARY:
             {
-            RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_PROPRIETARY send success\r\nOK\r\n");
+                RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_PROPRIETARY send success\r\nOK\r\n");
                 break;
             }
             case RUI_MCPS_MULTICAST:
             {
-            RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_MULTICAST send success\r\nOK\r\n");
+                RUI_LOG_PRINTF("[LoRa]: RUI_MCPS_MULTICAST send success\r\nOK\r\n");
             break;           
         }
         default:             
@@ -328,6 +329,11 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T mcps_type,RUI_RETURN_STATUS status)
     rui_gpio_rw(RUI_IF_WRITE,&Led_Blue, low);
     rui_timer_start(&Led_Blue_Timer); 
 
+}
+
+void LoRaP2PSendsucceed_callback(void)
+{
+    RUI_LOG_PRINTF("[LoRa] P2PTxDone.\r\n");    
 }
 
 /*******************************************************************************************
@@ -371,6 +377,7 @@ void main(void)
     rui_lorap2p_register_recv_callback(LoRaP2PReceive_callback);
     rui_lorajoin_register_callback(LoRaWANJoined_callback); 
     rui_lorasend_complete_register_callback(LoRaWANSendsucceed_callback); 
+    rui_lorap2p_complete_register_callback(LoRaP2PSendsucceed_callback);
 
     /*******************************************************************************************    
      *The query gets the current status 
@@ -425,6 +432,7 @@ void main(void)
 		default: break;
 	}   
     RUI_LOG_PRINTF("\r\n");
+
     while(1)
     {       
         rui_lora_get_status(false,&app_lora_status);//The query gets the current status 

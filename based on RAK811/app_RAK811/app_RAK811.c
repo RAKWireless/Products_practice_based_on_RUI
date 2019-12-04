@@ -2,7 +2,6 @@
 #include "board.h"
 
 static RUI_RETURN_STATUS rui_return_status;
-#define PRIMEVAL_DR 5
 //join cnt
 #define JOIN_MAX_CNT 6
 static uint8_t JoinCnt=0;
@@ -93,8 +92,7 @@ void app_loop(void)
     {
         IsJoiningflag = true;
         if(app_lora_status.join_mode == RUI_OTAA)
-        {
-            rui_lora_set_dr(PRIMEVAL_DR);
+        {            
             rui_return_status = rui_lora_join();
             switch(rui_return_status)
             {
@@ -111,6 +109,7 @@ void app_loop(void)
                     } 
                     break;
                 default: RUI_LOG_PRINTF("ERROR: LORA_STATUS_ERROR %d\r\n",rui_return_status);
+                    if(app_lora_status.lora_dr > 1)rui_lora_set_dr(app_lora_status.lora_dr-1);
                     rui_lora_get_status(false,&app_lora_status); 
                     switch(app_lora_status.autosend_status)
                     {
@@ -244,6 +243,11 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T mcps_type,RUI_RETURN_STATUS status)
     } 
 }
 
+void LoRaP2PSendsucceed_callback(void)
+{
+    RUI_LOG_PRINTF("[LoRa] P2PTxDone.\r\n");    
+}
+
 /*******************************************************************************************
  * The RUI is used to receive data from uart.
  * 
@@ -306,6 +310,7 @@ void main(void)
     rui_lorap2p_register_recv_callback(LoRaP2PReceive_callback);
     rui_lorajoin_register_callback(LoRaWANJoined_callback); 
     rui_lorasend_complete_register_callback(LoRaWANSendsucceed_callback); 
+    rui_lorap2p_complete_register_callback(LoRaP2PSendsucceed_callback);
 
     /*******************************************************************************************
      * Register Sleep and Wakeup callback function

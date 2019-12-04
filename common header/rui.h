@@ -937,6 +937,14 @@ typedef void (*lorap2p_receive)(RUI_LORAP2P_RECEIVE_T *data);
 RUI_RETURN_STATUS rui_lorap2p_register_recv_callback(lorap2p_receive callback);
 
 /***************************************************************************************
+ * @brief       This API is used to register a callback function for LoRaP2P in application,
+ * @return      RUI_RETURN_STATUS
+ * @param       lorap2p_send callback:  the callback function for LoRaP2P send success.
+***************************************************************************************/
+typedef void (*lorap2p_send)(void);
+RUI_RETURN_STATUS rui_lorap2p_complete_register_callback(lorap2p_send callback);
+
+/***************************************************************************************
  * @brief       This API is used to register a callback function for LoRaWAN join,
                 so that application can start LoRaWAN function.
  * @return      RUI_RETURN_STATUS
