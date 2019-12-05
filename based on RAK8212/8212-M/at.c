@@ -406,7 +406,7 @@ void at_parse(char *cmd)
             rui_at_response(false, at_rsp, RUI_AT_PARAMETER_INVALID);
             return;
         }
-        rui_cellular_mode(0);
+        rui_cellular_set_mode(RUI_POWER_OFF_MODE);
         memset(at_rsp,0,1536);
         memcpy(at_rsp,cmd,strlen(cmd));
         rui_at_response(true, at_rsp, RAK_OK);
@@ -423,7 +423,7 @@ void at_parse(char *cmd)
             rui_at_response(false, at_rsp, RUI_AT_PARAMETER_INVALID);
             return;
         }
-        rui_cellular_mode(1);
+        rui_cellular_set_mode(RUI_POWER_ON_MODE);
         memset(at_rsp,0,1536);
         memcpy(at_rsp,cmd,strlen(cmd));
         rui_at_response(true, at_rsp, RAK_OK);

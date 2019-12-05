@@ -580,12 +580,6 @@ RUI_RETURN_STATUS rui_cellular_send(uint8_t *data);
 **************************************************************************************/
 RUI_RETURN_STATUS rui_cellular_join(void);
 
-/***************************************************************************************
- * @brief       This API is used to open or close cellular.
- * @return      RUI_RETURN_STATUS
- * @param       uint8_t on: 0-off,1-on
-**************************************************************************************/
-RUI_RETURN_STATUS rui_cellular_mode(uint8_t on);
 
 /***************************************************************************************
  * @brief       This API is used to config ip and port of remote server for tcp link.
