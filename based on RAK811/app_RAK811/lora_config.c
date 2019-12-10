@@ -665,7 +665,7 @@ static uint32_t handle_lora_config(RUI_LORA_STATUS_T *config, int argc, char *ar
                             break;
                     }
                     break;  
-                default:RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
+                default:RUI_LOG_PRINTF("ERROR: LORA_STATUS_ERROR %d\r\n",rui_return_status);
                     return FAIL; 
             }               
             break;
@@ -688,7 +688,7 @@ static uint32_t handle_lora_config(RUI_LORA_STATUS_T *config, int argc, char *ar
                     return SUCCESS;
                 case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                     return FAIL;
-                default: RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
+                default: RUI_LOG_PRINTF("ERROR: LORA_STATUS_ERROR %d\r\n",rui_return_status);
                     return FAIL;
             }        
             break;
@@ -700,7 +700,7 @@ static uint32_t handle_lora_config(RUI_LORA_STATUS_T *config, int argc, char *ar
                     return SUCCESS;
                 case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                     return FAIL;
-                default: RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
+                default: RUI_LOG_PRINTF("ERROR: LORA_STATUS_ERROR %d\r\n",rui_return_status);
                     return FAIL;
             } 
             break;
@@ -721,7 +721,7 @@ static uint32_t handle_lora_config(RUI_LORA_STATUS_T *config, int argc, char *ar
                     return SUCCESS;
                 case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                     return FAIL;
-                default: RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
+                default: RUI_LOG_PRINTF("ERROR: LORA_STATUS_ERROR %d\r\n",rui_return_status);
                     return FAIL;
             }                     
             break;
@@ -741,7 +741,7 @@ static uint32_t handle_lora_config(RUI_LORA_STATUS_T *config, int argc, char *ar
                             break;
                         case 1:RUI_LOG_PRINTF("LoRa configure confirm success\r\nOK\r\n");
                             break;
-                        default: RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
+                        default: RUI_LOG_PRINTF("ERROR: LORA_STATUS_ERROR %d\r\n",rui_return_status);
                             return FAIL;
                     }
                     break; 
@@ -759,7 +759,7 @@ static uint32_t handle_lora_config(RUI_LORA_STATUS_T *config, int argc, char *ar
                     return SUCCESS;
                 case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                     return FAIL;
-                default: RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
+                default: RUI_LOG_PRINTF("ERROR: LORA_STATUS_ERROR %d\r\n",rui_return_status);
                     return FAIL;
             }        
             break;        
@@ -780,7 +780,7 @@ static uint32_t handle_lora_config(RUI_LORA_STATUS_T *config, int argc, char *ar
                     return SUCCESS;
                 case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                     return FAIL;
-                default: RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
+                default: RUI_LOG_PRINTF("ERROR: LORA_STATUS_ERROR %d\r\n",rui_return_status);
                     return FAIL;
             }         
             break; 
@@ -792,7 +792,7 @@ static uint32_t handle_lora_config(RUI_LORA_STATUS_T *config, int argc, char *ar
                     return SUCCESS;
                 case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                     return FAIL;
-                default: RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
+                default: RUI_LOG_PRINTF("ERROR: LORA_STATUS_ERROR %d\r\n",rui_return_status);
                     return FAIL;
             } 
             break; 
@@ -824,7 +824,7 @@ static uint32_t handle_lora_config(RUI_LORA_STATUS_T *config, int argc, char *ar
                     return SUCCESS;
                 case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
                     return FAIL;
-                default: RUI_LOG_PRINTF("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
+                default: RUI_LOG_PRINTF("ERROR: LORA_STATUS_ERROR %d\r\n",rui_return_status);
                     return FAIL;
             } 
             break;

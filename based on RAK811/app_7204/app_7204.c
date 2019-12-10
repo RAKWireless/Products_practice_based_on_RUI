@@ -14,6 +14,8 @@ RUI_LORA_STATUS_T app_lora_status; //record status
  * *****************************************************************************************/ 
 #define LED_1                                   8
 #define LED_2                                   9
+#define  I2C_SDA  19
+#define  I2C_SCL  18
 #define BAT_LEVEL_CHANNEL                       20
 
 
@@ -38,8 +40,6 @@ void rui_lora_autosend_callback(void)  //auto_send timeout event callback
 {
     autosend_flag = true;  
     IsJoiningflag = false;    
-    bsp_i2c_init();
-    rui_delay_ms(50);
 }
 
 void OnLed_Green_TimerEvent(void)
@@ -106,7 +106,7 @@ void bsp_i2c_init(void)
     I2c_1.PIN_SCL = I2C_SCL;
     I2c_1.FREQUENCY = RUI_I2C_FREQ_100K;
 
-    rui_i2c_init(&I2c_1);
+    if(rui_i2c_init(&I2c_1) != RUI_STATUS_OK)RUI_LOG_PRINTF("I2C init error.\r\n");
 
     rui_delay_ms(50);
 
@@ -324,7 +324,7 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T mcps_type,RUI_RETURN_STATUS status)
         default:             
             break;
         } 
-	}else RUI_LOG_PRINTF("ERROR: RUI_RETURN_STATUS %d\r\n",status); 
+	}else RUI_LOG_PRINTF("ERROR: LORA_STATUS_ERROR %d\r\n",status); 
 	
     rui_gpio_rw(RUI_IF_WRITE,&Led_Blue, low);
     rui_timer_start(&Led_Blue_Timer); 
@@ -362,6 +362,25 @@ void rui_uart_recv(RUI_UART_DEF uart_def, uint8_t *pdata, uint16_t len)
 }
 
 /*******************************************************************************************
+ * sleep and wakeup callback
+ * 
+ * *****************************************************************************************/
+void bsp_sleep(void)
+{
+    /*****************************************************************************
+             * user process code before enter sleep
+    ******************************************************************************/
+} 
+void bsp_wakeup(void)
+{
+    /*****************************************************************************
+             * user process code after exit sleep
+    ******************************************************************************/
+   bsp_i2c_init();
+   rui_delay_ms(50);
+}
+
+/*******************************************************************************************
  * the app_main function
  * *****************************************************************************************/ 
 void main(void)
@@ -378,6 +397,12 @@ void main(void)
     rui_lorajoin_register_callback(LoRaWANJoined_callback); 
     rui_lorasend_complete_register_callback(LoRaWANSendsucceed_callback); 
     rui_lorap2p_complete_register_callback(LoRaP2PSendsucceed_callback);
+
+    /*******************************************************************************************
+     * Register Sleep and Wakeup callback function
+     * 
+     * *****************************************************************************************/
+    rui_sensor_register_callback(bsp_wakeup,bsp_sleep);
 
     /*******************************************************************************************    
      *The query gets the current status 

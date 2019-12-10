@@ -14,6 +14,8 @@ RUI_LORA_STATUS_T app_lora_status; //record status
  * *****************************************************************************************/ 
 #define LED_1                                   8
 #define LED_2                                   9
+#define  I2C_SDA  19
+#define  I2C_SCL  18
 #define BAT_LEVEL_CHANNEL                       20
 
 
@@ -110,7 +112,7 @@ void bsp_i2c_init(void)
     I2c_1.PIN_SCL = I2C_SCL;
     I2c_1.FREQUENCY = RUI_I2C_FREQ_100K;
 
-    rui_i2c_init(&I2c_1);
+    if(rui_i2c_init(&I2c_1) != RUI_STATUS_OK)RUI_LOG_PRINTF("I2C init error.\r\n");
 
     rui_delay_ms(50);
 
@@ -508,7 +510,7 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T mcps_type,RUI_RETURN_STATUS status)
             default:             
                 break;
         } 
-    }else RUI_LOG_PRINTF("ERROR: RUI_RETURN_STATUS %d\r\n",status);    
+    }else RUI_LOG_PRINTF("ERROR: LORA_STATUS_ERROR %d\r\n",status);    
 	
     rui_delay_ms(10);  
     rui_gpio_rw(RUI_IF_WRITE,&Led_Blue, low);
@@ -583,6 +585,8 @@ void bsp_wakeup(void)
    sendfull = true;  //clear subcontract send flag
    sample_status = false;  //clear sample flag
    gps_timeout_flag = true;  //clear serch Satellite flag 
+   bsp_i2c_init();
+   rui_delay_ms(50);
 }
 
 /*******************************************************************************************

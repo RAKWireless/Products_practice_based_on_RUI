@@ -15,6 +15,8 @@ RUI_LORA_STATUS_T app_lora_status; //record status
 const uint8_t level[2]={0,1};
 #define low     &level[0]
 #define high    &level[1]
+#define  I2C_SDA  19
+#define  I2C_SCL  18
 
 RUI_I2C_ST I2c_1;
 volatile static bool autosend_flag = false;    //auto send flag
@@ -37,7 +39,7 @@ void bsp_i2c_init(void)
     I2c_1.PIN_SCL = I2C_SCL;
     I2c_1.FREQUENCY = RUI_I2C_FREQ_100K;
 
-    rui_i2c_init(&I2c_1);
+    if(rui_i2c_init(&I2c_1) != RUI_STATUS_OK)RUI_LOG_PRINTF("I2C init error.\r\n");
 
     rui_delay_ms(50);
 
@@ -229,7 +231,7 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T mcps_type,RUI_RETURN_STATUS status)
             default:             
                 break;
         } 
-	}else RUI_LOG_PRINTF("ERROR: RUI_RETURN_STATUS %d\r\n",status); 
+	}else RUI_LOG_PRINTF("ERROR: LORA_STATUS_ERROR %d\r\n",status); 
 	
     rui_lora_get_status(false,&app_lora_status);//The query gets the current status 
     switch(app_lora_status.autosend_status)
