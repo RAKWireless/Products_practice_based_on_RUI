@@ -184,8 +184,7 @@ void at_parse(char *cmd)
        strstr(cmd,"at+set_config=lora:ch_mask:")==NULL && strstr(cmd,"at+set_config=ble:work_mode:")==NULL && strstr(cmd,"at+set_config=lorap2p:")==NULL &&
        strstr(cmd,"at+send=lorap2p:")==NULL  && strstr(cmd,"at+set_config=device:boot")==NULL  && strstr(cmd,"at+run")==NULL  &&
        strstr(cmd,"at+set_config=lora:adr:")==NULL && strstr(cmd,"at+set_config=lora:dr:")==NULL && strstr(cmd,"at+set_config=hologram:")==NULL &&
-       strstr(cmd,"at+send=hologram:sensor")==NULL && strstr(cmd,"at+send=hologram:user:")==NULL && strstr(cmd, "at+set_config=uart:work_mode:")==NULL && 
-	   strstr(cmd, "at+set_config=device:uart_mode:X:Y")==NULL && strstr(cmd,"at+help")==NULL)
+       strstr(cmd,"at+send=hologram:sensor")==NULL && strstr(cmd,"at+send=hologram:user:")==NULL && strstr(cmd,"at+help")==NULL)
     {
         memset(at_rsp,0,1536);
         //RUI_LOG_PRINTF("Invalid at command!!");
@@ -812,19 +811,45 @@ void at_parse(char *cmd)
             { work_mode = BLE_MODE_PERIPHERAL; }
         else if (*ptr == '1')
             { work_mode = BLE_MODE_CENTRAL; }
-        else
+        else if (*ptr == '2')
             { work_mode = BLE_MODE_OBSERVER; }
+        else
+        {
+            memset(at_rsp,0,1536);
+            memcpy(at_rsp,cmd,strlen(cmd));
+            memcpy(at_rsp+strlen(at_rsp),"ERROR:RUI_AT_PARAMETER_INVALID",strlen("ERROR:RUI_AT_PARAMETER_INVALID"));
+            rui_at_response(false, at_rsp, RUI_AT_PARAMETER_INVALID);
+            return ;
+        }
 
         #ifdef S140
         ptr += 2;
         if (*ptr == '1')
             { long_range_enable = 1; }
-        else
+        else if (*ptr == '0')
             { long_range_enable = 0; }
+        else
+        {
+            memset(at_rsp,0,1536);
+            memcpy(at_rsp,cmd,strlen(cmd));
+            memcpy(at_rsp+strlen(at_rsp),"ERROR:RUI_AT_PARAMETER_INVALID",strlen("ERROR:RUI_AT_PARAMETER_INVALID"));
+            rui_at_response(false, at_rsp, RUI_AT_PARAMETER_INVALID);
+            return ;
+        }
+        
         #endif
 
         #ifdef S132
+        if (*ptr == '0')
             long_range_enable = 0;
+        else
+        {
+            memset(at_rsp,0,1536);
+            memcpy(at_rsp,cmd,strlen(cmd));
+            memcpy(at_rsp+strlen(at_rsp),"ERROR:RUI_AT_PARAMETER_INVALID",strlen("ERROR:RUI_AT_PARAMETER_INVALID"));
+            rui_at_response(false, at_rsp, RUI_AT_PARAMETER_INVALID);
+            return ;
+        }
         #endif
         
         RUI_LOG_PRINTF("g_rui_cfg_t.g_ble_cfg_t.work_mode = %d", work_mode); 
