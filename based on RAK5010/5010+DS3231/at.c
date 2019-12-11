@@ -884,7 +884,7 @@ void at_parse(char *cmd)
         ptr += 2;
         if (*ptr == '1')
             { long_range_enable = 1; }
-        else (*ptr == '0')
+        else if (*ptr == '0')
             { long_range_enable = 0; }
         else
         {
