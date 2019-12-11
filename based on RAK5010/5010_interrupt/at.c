@@ -913,6 +913,7 @@ void at_parse(char *cmd)
         RUI_LOG_PRINTF("g_rui_cfg_t.g_ble_cfg_t.work_mode = %d", work_mode); 
         RUI_LOG_PRINTF("g_rui_cfg_t.g_ble_cfg_t.long_range_enable = %d", long_range_enable); 
         memset(at_rsp,0,1536);
+        err_code = rui_ble_set_work_mode(work_mode, long_range_enable);
         if (err_code != 0)
         {
             memcpy(at_rsp,cmd,strlen(cmd));
