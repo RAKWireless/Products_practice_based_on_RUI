@@ -1,5 +1,7 @@
 #include <stdbool.h>
 #include <string.h>
+#include <stdarg.h>
+#include <stdio.h>
 #include "inner.h"
 #include "at.h"
 
@@ -126,6 +128,19 @@ bool at_check_param_length(uint8_t *p_data, uint16_t len)
 
 }
 
+void uart_log_printf(const char *fmt, ...)
+{
+    char print_buf[512];
+    va_list aptr;
+    int ret;
+ 
+    va_start (aptr, fmt);
+    ret = vsprintf (print_buf, fmt, aptr);
+    va_end (aptr);
+ 
+    rui_uart_send(RUI_UART1, print_buf, strlen(print_buf));
+}
+
 void at_parse(char *cmd)
 {
     char  *ptr = NULL;
@@ -143,7 +158,7 @@ void at_parse(char *cmd)
         return;
     }
 
-    sprintf(at_rsp,"%s",cmd);
+    sprintf(at_rsp,"\r\n%s",cmd);
 
     // at+version
     if(strstr(cmd,"at+version")!= 0)
@@ -159,14 +174,11 @@ void at_parse(char *cmd)
     // at+set_config=device:sleep:1
     if(strstr(cmd,"at+set_config=device:sleep:1")!= 0)
     {
-        strcat(at_rsp, "Go to sleep.\r\n");
+        strcat(at_rsp, "Go to sleep\r\n");
         rui_at_response(true, at_rsp, RUI_AT_OK);
+        rui_delay_ms(100);
 
-        if(power_flag == 0)
-        {
-            rui_device_sleep(1);
-            power_flag =1;
-        }
+        rui_device_sleep(1);
         return;
     }
 
@@ -609,7 +621,7 @@ void at_parse(char *cmd)
             at_response_param_invalid(at_rsp);
             return;
         }
-        sleep_period = atoi(sleep_data) * 1000;
+        sleep_period = atoi(sleep_data);
         err_code = rui_lora_set_send_interval(mode, sleep_period);
         if (err_code != RUI_STATUS_OK) {
             strcat(at_rsp, "ERROR:RUI_AT_RW_FLASH_ERROR");
@@ -620,6 +632,7 @@ void at_parse(char *cmd)
             else strcat(at_rsp, "LoRa configure send_interval sleep success\r\n");
             rui_at_response(true, at_rsp, RUI_AT_OK); 
         }
+        rui_delay_ms(50);
         return;
     }
     

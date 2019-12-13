@@ -38,6 +38,7 @@ at+help \n\
 **************************************************\n"
 
 
+void uart_log_printf(const char *fmt, ...);
 
 
 #endif
