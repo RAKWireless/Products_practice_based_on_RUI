@@ -651,6 +651,7 @@ void at_parse(char *cmd)
          memcpy(&(g_rui_cfg_t.g_cellular_cfg_t.operator_apn_data[0]),operator_apn_data,20);   
          memset(&(g_rui_cfg_t.g_cellular_cfg_t.operator_net_data[0]),0,20);
          memcpy(&(g_rui_cfg_t.g_cellular_cfg_t.operator_net_data[0]),operator_net_data,20);                       
+         err_code = rui_flash_write(RUI_FLASH_ORIGIN,NULL,0);                    
         memset(at_rsp,0,1536);
         if (err_code != 0)
         {
@@ -681,7 +682,7 @@ void at_parse(char *cmd)
          {
             g_rui_cfg_t.g_cellular_cfg_t.hologram_card_num[index++] = *ptr;
          };
-
+         err_code = rui_flash_write(RUI_FLASH_ORIGIN,NULL,0);    
         memset(at_rsp,0,1536);
         if (err_code != 0)
         {
