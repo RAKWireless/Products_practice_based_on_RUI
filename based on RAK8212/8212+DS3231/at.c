@@ -866,6 +866,7 @@ void at_parse(char *cmd)
         #endif
 
         #ifdef S132
+        ptr += 2;
         if (*ptr == '0')
             long_range_enable = 0;
         else
