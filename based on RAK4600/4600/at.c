@@ -582,6 +582,75 @@ void at_parse(char *cmd)
         }
         return;
     }
+
+    // at+set_config=lora:adr:X
+    if(strstr(cmd,"at+set_config=lora:adr")!= NULL)
+    {
+        bool adr;
+        ptr = NULL;
+        ptr = strstr(cmd,"adr");
+        ptr += 4;
+
+        if(*ptr == '0')
+            adr = false;
+        else if(*ptr == '1')
+            adr = true;
+        else
+        {
+            at_response_param_invalid(at_rsp);
+            return ;
+        }
+
+        err_code = rui_lora_set_adr(adr);
+        if (err_code != RUI_STATUS_OK) {
+            strcat(at_rsp, "ERROR:RUI_STATUS_PARAMETER_INVALID");
+            rui_at_response(false, at_rsp, RUI_STATUS_PARAMETER_INVALID);
+        }
+        else {
+            if (adr) strcat(at_rsp, "LoRa configure adr enable success\r\n");
+            else strcat(at_rsp, "LoRa configure adr disable success\r\n");
+            rui_at_response(true, at_rsp, RUI_AT_OK);
+        }
+
+        return;
+    }
+
+    // at+set_config=lora:dr:X
+    if(strstr(cmd,"at+set_config=lora:dr")!= NULL)
+    {
+        uint8_t dr;
+        uint8_t dr_str[10]={0};
+        ptr = NULL;
+        index = 0;
+        ptr = strstr(cmd,"dr");
+        ptr += 3;
+
+        for(ptr; *ptr !='\r'; ptr++)
+        {
+            dr_str[index++] = *ptr;
+            if (index >= 10) break;
+        }
+        dr = atoi(dr_str);
+
+        if(dr > 15)
+        {
+            at_response_param_invalid(at_rsp);
+            return;
+        }
+        err_code = rui_lora_set_dr(dr);
+        if (err_code != RUI_STATUS_OK) {
+            uart_log_printf("%d\r\n", err_code);
+            strcat(at_rsp, "ERROR:RUI_LORA_STATUS_DATARATE_INVALID");
+            rui_at_response(false, at_rsp, RUI_LORA_STATUS_DATARATE_INVALID); 
+        }
+        else {
+            sprintf(at_rsp+strlen(at_rsp), "LoRa configure DR %d success\r\n", dr);
+            rui_at_response(true, at_rsp, RUI_AT_OK); 
+        }
+
+        return;
+    }
+
     
     // at+set_config=lora:send_interval:X
     if(strstr(cmd,"at+set_config=lora:send_interval")!= NULL)

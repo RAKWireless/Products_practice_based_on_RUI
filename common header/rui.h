@@ -742,6 +742,13 @@ RUI_RETURN_STATUS rui_lora_set_class(RUI_LORA_CLASS_MODE class);
 RUI_RETURN_STATUS rui_lora_set_confirm(bool is_confirm);
 
 /***************************************************************************************
+ * @brief       This API is used to set the ADR for LoRa node.
+ * @return      RUI_RETURN_STATUS
+ * @param       bool is_enable: true-enable, false-disable
+***************************************************************************************/
+RUI_RETURN_STATUS rui_lora_set_adr(bool is_enable);
+
+/***************************************************************************************
  * @brief       This API is used to set the DR for LoRa node.
  * @return      RUI_RETURN_STATUS
  * @param       uint8_t dr: the value of DR.
