@@ -786,7 +786,7 @@ static uint32_t handle_lora_config(RUI_LORA_STATUS_T *config, int argc, char *ar
             }        
             break;        
         case adr:
-            rui_return_status = rui_lora_adr(atoi(argv[1]));
+            rui_return_status = rui_lora_set_adr(atoi(argv[1]));
             switch(rui_return_status)
             {
                 case RUI_STATUS_OK:
