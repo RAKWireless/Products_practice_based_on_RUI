@@ -51,9 +51,15 @@ typedef struct {
 } rui_cfg_t;
 ******************************************************************************/
 
+#ifndef __RUI_LOG_PRINT_MERGE
+#define __RUI_LOG_PRINT_MERGE
+#define RUI_LOG_PRINTF_MERGE(fmt, args...);  {uart_log_printf(fmt, ##args);RUI_LOG_PRINTF(fmt, ##args);}
+#endif
 rui_cfg_t g_rui_cfg_t = {0};
 
 extern RUI_LORA_STATUS_T lora_status;
+extern bool IsJoiningflag;  //flag whether joining or not status
+extern RUI_RETURN_STATUS rui_return_status;
 int at_flag = 0;
 int power_flag = 0;
 
@@ -381,8 +387,8 @@ void at_parse(char *cmd)
         }
         err_code = rui_lora_set_region(region);
         if (err_code != RUI_STATUS_OK) {
-            strcat(at_rsp, "ERROR:RUI_AT_RW_FLASH_ERROR");
-            rui_at_response(false, at_rsp, RUI_AT_RW_FLASH_ERROR); 
+            strcat(at_rsp, "ERROR:RUI_LORA_STATUS_REGION_NOT_SUPPORTED");
+            rui_at_response(false, at_rsp, RUI_LORA_STATUS_REGION_NOT_SUPPORTED); 
         }
         else { 
             strcat(at_rsp, "Selected LoRaWAN 1.0.2 Region:");
@@ -450,7 +456,17 @@ void at_parse(char *cmd)
             strcat(at_rsp, "\r\n");
         }
         at_response_string(at_rsp);
-        rui_lora_join();
+        IsJoiningflag = true;
+        rui_return_status = rui_lora_join();
+        switch(rui_return_status)
+        {
+            case RUI_STATUS_OK: if (RUI_ABP == g_rui_cfg_t.g_lora_cfg_t.join_mode) LoRaWANJoined_callback(1);
+                break;
+            case RUI_STATUS_PARAMETER_INVALID:RUI_LOG_PRINTF_MERGE("ERROR: RUI_AT_PARAMETER_INVALID %d\r\n",RUI_AT_PARAMETER_INVALID);
+                break;
+            default: RUI_LOG_PRINTF_MERGE("ERROR: RUI_AT_UNSUPPORT %d\r\n",RUI_AT_UNSUPPORT);
+                break;
+        }
 
         return;
     }
@@ -632,14 +648,8 @@ void at_parse(char *cmd)
         }
         dr = atoi(dr_str);
 
-        if(dr > 15)
-        {
-            at_response_param_invalid(at_rsp);
-            return;
-        }
         err_code = rui_lora_set_dr(dr);
         if (err_code != RUI_STATUS_OK) {
-            uart_log_printf("%d\r\n", err_code);
             strcat(at_rsp, "ERROR:RUI_LORA_STATUS_DATARATE_INVALID");
             rui_at_response(false, at_rsp, RUI_LORA_STATUS_DATARATE_INVALID); 
         }
@@ -683,10 +693,10 @@ void at_parse(char *cmd)
         {
             sleep_data[index++] = *ptr;
         }
-        if(atoi(sleep_data)<30)
+        if(atoi(sleep_data)<1)
         {
-            RUI_LOG_PRINTF("Send interval should not be less than 30 s !!!!");
-            strcat(at_rsp, "Send interval should not be less than 30 s.\r\n");
+            RUI_LOG_PRINTF("Send interval should not be less than 1s !!!!");
+            strcat(at_rsp, "Send interval should not be less than 1s.\r\n");
             at_response_param_invalid(at_rsp);
             return;
         }

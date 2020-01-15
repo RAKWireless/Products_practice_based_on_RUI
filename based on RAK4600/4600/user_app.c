@@ -152,12 +152,7 @@ void LoRaWANJoined_callback(uint32_t status)
         {
             JoinCnt++;
             RUI_LOG_PRINTF_MERGE("[LoRa]:Join retry Cnt:%d\r\n",JoinCnt);
-            rui_lora_get_status(false,&app_lora_status);
-            if(app_lora_status.lora_dr > 0)
-            {
-                app_lora_status.lora_dr -= 1;
-            }else app_lora_status.lora_dr = 0;
-            rui_lora_set_dr(app_lora_status.lora_dr);
+
             rui_lora_join();                    
         }
         else   //Join failed
