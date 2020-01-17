@@ -156,7 +156,7 @@ typedef struct RUI_RECEIVE
     /*!
      * Snr of the received packet
      */
-    uint8_t Snr;
+    int8_t Snr;
 
     /*!
      * The downlink counter value for the received frame
