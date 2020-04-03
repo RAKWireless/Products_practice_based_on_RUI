@@ -5,8 +5,8 @@
                 part, AT cmd part, task part sensor part, it can
                 help users to build their app easily and elegantly.
  * @author      Rakwireless
- * @version     2.0
- * @date        2019.6
+ * @version     3.0
+ * @date        2020.4
 ***************************************************************/
 
 #ifndef _RUI_H
