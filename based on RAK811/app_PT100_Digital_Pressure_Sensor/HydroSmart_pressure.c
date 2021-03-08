@@ -9,7 +9,7 @@ void Pressure_init(void)
 	rui_i2c.FREQUENCY = RUI_I2C_FREQ_100K; 
 	rui_i2c.PIN_SDA = I2C_SDA;
 	rui_i2c.PIN_SCL = I2C_SCL;
-	if(rui_i2c_init(&I2c_1) != RUI_STATUS_OK)RUI_LOG_PRINTF("I2C init error.\r\n");
+	if(rui_i2c_init(&rui_i2c) != RUI_STATUS_OK)RUI_LOG_PRINTF("I2C init error.\r\n");
 }
 void Get_Pressure(double* P_PSI,double* Temperature)
 {

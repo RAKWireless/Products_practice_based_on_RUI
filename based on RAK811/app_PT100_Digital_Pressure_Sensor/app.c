@@ -343,6 +343,7 @@ void LoRaWANSendsucceed_callback(RUI_MCPS_T mcps_type,RUI_RETURN_STATUS status)
             break;
         default:break;
     }  
+}
 
 void LoRaP2PSendsucceed_callback(void)
 {
