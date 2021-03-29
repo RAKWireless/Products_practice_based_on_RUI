@@ -418,11 +418,12 @@ void app_loop(void)
  * * void LoRaWANSendsucceed_callback(RUI_MCPS_T status);//LoRaWAN call back after send data complete
  * *****************************************************************************************/  
 void LoRaReceive_callback(RUI_RECEIVE_T* Receive_datapackage)
-{
+{  	
     char hex_str[3] = {0}; 
     RUI_LOG_PRINTF("at+recv=%d,%d,%d,%d", Receive_datapackage->Port, Receive_datapackage->Rssi, Receive_datapackage->Snr, Receive_datapackage->BufferSize);   
     
     if ((Receive_datapackage->Buffer != NULL) && Receive_datapackage->BufferSize) {
+
         RUI_LOG_PRINTF(":");
         for (int i = 0; i < Receive_datapackage->BufferSize; i++) {
             sprintf(hex_str, "%02x", Receive_datapackage->Buffer[i]);
@@ -430,6 +431,17 @@ void LoRaReceive_callback(RUI_RECEIVE_T* Receive_datapackage)
         }
     }
     RUI_LOG_PRINTF("\r\n");
+
+    if(Receive_datapackage->Port == 8 && Receive_datapackage->BufferSize == 2 && (Receive_datapackage->Buffer[0]<<8 | Receive_datapackage->Buffer[1]) == 0x04FF) // port: 8, size:2 bytes, type code: 0x04
+    {
+    	rui_device_reset(); //restarts the device
+    }
+
+    if(Receive_datapackage->Port == 8 && Receive_datapackage->BufferSize == 4 && Receive_datapackage->Buffer[0] == 0x01) // port:8, size: 4 bytes, type code: 0x01, 3 bytes for time in seconds 
+    {
+    	int interval_time = Receive_datapackage->Buffer[1]<<16 | Receive_datapackage->Buffer[2]<<8 | Receive_datapackage->Buffer[3];
+    	rui_lora_set_send_interval(1,interval_time); //sets send interval in seconds
+    }
 }
 void LoRaP2PReceive_callback(RUI_LORAP2P_RECEIVE_T *Receive_P2Pdatapackage)
 {
